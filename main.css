@@ -1,0 +1,42 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+#board {
+    display: grid;
+    grid-template-columns: repeat(10, 40px); /* 10列 */
+    grid-template-rows: repeat(10, 40px);    /* 10行 */
+    gap: 2px;
+    margin: 20px auto;
+    width: fit-content;
+    background-color: #222;
+}
+
+.cell {
+    width: 40px;
+    height: 40px;
+    background-color: #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.player {
+    background-color: red;
+    color: white;
+    font-weight: bold;
+}
+
+#controls {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+button {
+    padding: 10px;
+    font-size: 18px;
+    cursor: pointer;
+}
