@@ -40,3 +40,18 @@ button {
     font-size: 18px;
     cursor: pointer;
 }
+
+#status {
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 10px;
+    color: darkred;
+}
+.username-label {
+    position: absolute;
+    transform: translateY(-20px);
+    font-size: 14px;
+    font-weight: bold;
+    color: black;
+    text-align: center;
+}
