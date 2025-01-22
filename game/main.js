@@ -5,7 +5,6 @@ const board = document.getElementById("board");
 // WebSocket 接続
 const socket = io("https://bordgame.onrender.com");
 
-
 let skipTurn = false; // 1ターン休みフラグ
 let players = {}; // すべてのプレイヤー情報
 let currentId = null; // 自分のID
@@ -37,15 +36,18 @@ fetch("session.php")
         console.error("プレイヤーデータの取得に失敗:", error);
     });
 
-// サーバーから全プレイヤーの最新情報を受信
+// WebSocket でプレイヤーデータを受け取る
 socket.on("playersData", (data) => {
-    console.log("リアルタイムプレイヤーデータ取得:", data);
-    players = data;
+    console.log("プレイヤーデータ取得:", data);
+    players = data.players;
+    currentId = data.currentId;
     drawBoard();
 });
+
+// 他のプレイヤーの移動をリアルタイムで受信
 socket.on("playerMoved", (data) => {
     console.log(`プレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
-
+    
     const player = players.find(p => p.id == data.id);
     if (player) {
         player.x = data.x;

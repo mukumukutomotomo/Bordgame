@@ -1,9 +1,9 @@
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
-const mysql = require("mysql2");
+const axios = require("axios");
+const cors = require("cors");
 
-// Express サーバーの設定
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -13,41 +13,37 @@ const io = socketIo(server, {
     }
 });
 
-// データベース接続 (Render の MySQL)
-const db = mysql.createConnection({
-    host: "mysql312.phy.lolipop.lan",
-    user: "LAA1538186",
-    password: "altair",
-    database: "LAA1538186-login"
-});
+// CORSを有効化
+app.use(cors());
 
-db.connect(err => {
-    if (err) {
-        console.error("データベース接続エラー: " + err);
-    } else {
-        console.log("データベース接続成功");
-    }
-});
+// ロリポップの `session.php` のURL
+const LOLLIPOP_API = "https://tohru-portfolio.secret.jp/bordgame/game/session.php"; 
 
-// WebSocket 接続処理
-io.on("connection", (socket) => {
+// WebSocket接続処理
+io.on("connection", async (socket) => {
     console.log("新しいプレイヤーが接続しました:", socket.id);
 
-    // 最新のプレイヤーデータを送信
-    sendPlayerData(socket);
+    try {
+        // ロリポップの `session.php` からデータを取得
+        const response = await axios.get(LOLLIPOP_API, { withCredentials: true });
 
-    // プレイヤー移動
-    socket.on("movePlayer", (data) => {
-        const { id, x, y } = data;
-        console.log(`プレイヤー ${id} が移動: x=${x}, y=${y}`);
+        // 取得したプレイヤーデータをクライアントに送信
+        socket.emit("playersData", response.data);
+    } catch (error) {
+        console.error("データ取得エラー:", error.message);
+    }
 
-        db.query("UPDATE board SET x = ?, y = ? WHERE id = ?", [x, y, id], (err) => {
-            if (err) {
-                console.error("位置更新エラー:", err);
-                return;
-            }
-            io.emit("playerMoved", { id, x, y });
-        });
+    // プレイヤー移動処理
+    socket.on("movePlayer", async (data) => {
+        console.log(`プレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
+
+        try {
+            // ロリポップの `update_position.php` にデータを送信
+            await axios.post("https://tohru-portfolio.secret.jp/bordgame/game/update_position.php", data);
+            io.emit("playerMoved", data);
+        } catch (error) {
+            console.error("位置更新エラー:", error.message);
+        }
     });
 
     // 切断処理
@@ -56,19 +52,8 @@ io.on("connection", (socket) => {
     });
 });
 
-// すべてのプレイヤーデータを取得
-function sendPlayerData(socket) {
-    db.query("SELECT id, username, x, y FROM board", (err, results) => {
-        if (err) {
-            console.error("データ取得エラー:", err);
-            return;
-        }
-        socket.emit("playersData", results);
-    });
-}
-
-// Render 用のポート設定
-const PORT = process.env.PORT || 3000;
+// ポート設定
+const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
     console.log(`WebSocket サーバーが ${PORT} で起動しました`);
 });
