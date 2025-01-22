@@ -3,7 +3,8 @@ const cols = 10;
 const board = document.getElementById("board");
 
 // WebSocket 接続
-const socket = io("http://localhost:3000");
+const socket = io("https://bordgame.onrender.com");
+
 
 let skipTurn = false; // 1ターン休みフラグ
 let players = {}; // すべてのプレイヤー情報
@@ -42,8 +43,6 @@ socket.on("playersData", (data) => {
     players = data;
     drawBoard();
 });
-
-// 他のプレイヤーの移動をリアルタイムで受信
 socket.on("playerMoved", (data) => {
     console.log(`プレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
 
@@ -54,6 +53,7 @@ socket.on("playerMoved", (data) => {
         drawBoard();
     }
 });
+
 
 // 盤面を描画
 function drawBoard() {
@@ -90,7 +90,6 @@ function movePlayer(steps) {
 
     for (let i = 0; i < Math.abs(steps); i++) {
         if (steps > 0) {
-            // 前進処理
             if (newY % 2 === 0) {
                 if (newX < cols - 1) {
                     newX++;
@@ -102,32 +101,15 @@ function movePlayer(steps) {
                     newX--;
                 } else if (newY < rows - 1) {
                     newY++;
-                }
-            }
-        } else {
-            // 後退処理
-            if (newY % 2 === 0) {
-                if (newX > 0) {
-                    newX--;
-                } else if (newY > 0) {
-                    newY--;
-                }
-            } else {
-                if (newX < cols - 1) {
-                    newX++;
-                } else if (newY > 0) {
-                    newY--;
                 }
             }
         }
     }
 
-    // WebSocket でサーバーに移動データを送信
+    // WebSocket で Render に送信
     socket.emit("movePlayer", { id: currentId, x: newX, y: newY });
-
-    // データベースも更新
-    updatePlayerPosition(currentId, newX, newY);
 }
+
 
 // プレイヤーの位置をデータベースに更新
 function updatePlayerPosition(id, newX, newY) {

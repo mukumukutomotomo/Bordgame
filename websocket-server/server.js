@@ -13,7 +13,7 @@ const io = socketIo(server, {
     }
 });
 
-// データベース接続
+// データベース接続 (Render の MySQL)
 const db = mysql.createConnection({
     host: "mysql312.phy.lolipop.lan",
     user: "LAA1538186",
@@ -29,36 +29,34 @@ db.connect(err => {
     }
 });
 
-// プレイヤーデータをクライアントに送る
+// WebSocket 接続処理
 io.on("connection", (socket) => {
     console.log("新しいプレイヤーが接続しました:", socket.id);
 
-    // クライアントに最新のプレイヤーデータを送信
+    // 最新のプレイヤーデータを送信
     sendPlayerData(socket);
 
-    // プレイヤーが移動したときの処理
+    // プレイヤー移動
     socket.on("movePlayer", (data) => {
         const { id, x, y } = data;
         console.log(`プレイヤー ${id} が移動: x=${x}, y=${y}`);
 
-        // データベースを更新
         db.query("UPDATE board SET x = ?, y = ? WHERE id = ?", [x, y, id], (err) => {
             if (err) {
                 console.error("位置更新エラー:", err);
                 return;
             }
-            // すべてのクライアントに更新情報を送信
             io.emit("playerMoved", { id, x, y });
         });
     });
 
-    // クライアント切断時の処理
+    // 切断処理
     socket.on("disconnect", () => {
         console.log("プレイヤーが切断しました:", socket.id);
     });
 });
 
-// すべてのプレイヤーデータを取得し、送信
+// すべてのプレイヤーデータを取得
 function sendPlayerData(socket) {
     db.query("SELECT id, username, x, y FROM board", (err, results) => {
         if (err) {
@@ -69,8 +67,8 @@ function sendPlayerData(socket) {
     });
 }
 
-// サーバーを起動
-const PORT = 3000;
+// Render 用のポート設定
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`WebSocketサーバーが http://localhost:${PORT} で起動しました`);
+    console.log(`WebSocket サーバーが ${PORT} で起動しました`);
 });
