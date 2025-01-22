@@ -12,6 +12,25 @@ const io = socketIo(server, {
         methods: ["GET", "POST"]
     }
 });
+io.on("connection", async (socket) => {
+    console.log("✅ 新しいプレイヤーが接続しました:", socket.id);
+
+    try {
+        const response = await axios.get("https://あなたのロリポップドメイン/session.php");
+        console.log("📡 `session.php` からのデータ:", response.data);
+
+        if (!response.data.currentId) {
+            console.error("❌ `currentId` が null です！WebSocket でプレイヤーを識別できません。");
+        } else {
+            console.log(`✅ WebSocket で受け取った currentId: ${response.data.currentId}`);
+        }
+
+        socket.emit("playersData", response.data);
+    } catch (error) {
+        console.error("❌ `session.php` からのデータ取得エラー:", error.message);
+    }
+});
+
 
 // CORSを有効化
 app.use(cors());

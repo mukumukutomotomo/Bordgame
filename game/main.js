@@ -108,10 +108,11 @@ function movePlayer(steps) {
         }
     }
 
+    console.log(`📡 movePlayer() 実行: id=${currentId}, x=${newX}, y=${newY}`);
+
     // WebSocket で Render に送信
     socket.emit("movePlayer", { id: currentId, x: newX, y: newY });
 }
-
 
 // プレイヤーの位置をデータベースに更新
 function updatePlayerPosition(id, newX, newY) {
