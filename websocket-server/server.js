@@ -16,7 +16,7 @@ io.on("connection", async (socket) => {
     console.log("✅ 新しいプレイヤーが接続しました:", socket.id);
 
     try {
-        const response = await axios.get("https://あなたのロリポップドメイン/session.php");
+        const response = await axios.get("https://tohru-portfolio.secret.jp/bordgame/game/session.php");
         console.log("📡 `session.php` からのデータ:", response.data);
 
         if (!response.data.currentId) {
