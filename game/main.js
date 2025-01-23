@@ -58,18 +58,39 @@ fetch("session.php")
     });
     
 
-// 他のプレイヤーの移動をリアルタイムで受信
-socket.on("playerMoved", (data) => {
-    console.log(`プレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
-    
-    const player = players.find(p => p.id == data.id);
-    if (player) {
-        player.x = data.x;
-        player.y = data.y;
-        drawBoard();
-    }
-});
+        // 他のプレイヤーの移動をリアルタイムで受信
+        socket.on("playerMoved", (data) => {
+            console.log(`プレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
+                
+            const player = players.find(p => p.id == data.id);
+            if (player) {
+                player.x = data.x;
+                player.y = data.y;
+                drawBoard();
+            }
+        });
 
+        // ゲーム開始時の処理
+        socket.on("startGame", () => {
+            document.getElementById("gameStatus").textContent = "🎮 ゲームが開始されました！";
+            document.getElementById("board").style.display = "grid";
+        });
+
+        // ゲーム終了時の処理
+        socket.on("endGame", () => {
+            document.getElementById("gameStatus").textContent = "🛑 ゲームが終了しました";
+            document.getElementById("board").style.display = "none";
+        });
+
+
+        socket.on("updatePlayers", (playersData) => {
+            console.log("🆕 新しいプレイヤーが追加されました:", playersData);
+        
+            // プレイヤーリストを更新
+            players = playersData;
+            drawBoard();
+        });
+        
 
 // 盤面を描画
 function drawBoard() {
