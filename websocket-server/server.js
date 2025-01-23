@@ -59,6 +59,19 @@ let players = []; // 現在のプレイヤーリスト
     
         drawBoard();
     });
+
+    // プレイヤー識別
+    socket.on("connect", () => {
+    let token = sessionStorage.getItem("token");
+    if (!token) {
+        console.error("❌ `token` が見つかりません！");
+        return;
+    }
+
+    console.log(`📡 WebSocket に自分のトークンを登録: ${token}`);
+    socket.emit("registerPlayer", token);
+});
+
     
 
     // 🔹 ゲーム開始処理
@@ -73,22 +86,34 @@ let players = []; // 現在のプレイヤーリスト
         io.emit("endGame");
     });
 
-    // 🔹 プレイヤー移動処理
-    socket.on("movePlayer", async (data) => {
-        console.log(`🔄 プレイヤー ${data.id || "null"} が移動: x=${data.x}, y=${data.y}`);
-
-        if (!data.id) {
-            console.error("❌ movePlayer() に ID が渡されていません！");
-            return;
-        }
-
-        try {
-            await axios.post("https://tohru-portfolio.secret.jp/bordgame/game/update_position.php", data);
-            io.emit("playerMoved", data);
-        } catch (error) {
-            console.error("❌ 位置更新エラー:", error.message);
-        }
+    const playerTokens = {}; // 🎯 `token` と `socket.id` を紐付ける
+    
+    io.on("connection", (socket) => {
+        console.log(`✅ プレイヤーが接続: ${socket.id}`);
+    
+        socket.on("registerPlayer", (token) => {
+            console.log(`🎯 プレイヤー登録: Token=${token}`);
+            playerTokens[socket.id] = token; // 🎯 WebSocket に `token` を紐づける
+        });
+    
+        // プレイヤー移動
+        socket.on("movePlayer", (data) => {
+            const token = playerTokens[socket.id]; // 🎯 `token` を取得
+            if (!token) {
+                console.error("❌ movePlayer() に Token が渡されていません！");
+                return;
+            }
+    
+            console.log(`🔄 プレイヤー (Token=${token}) が移動: x=${data.x}, y=${data.y}`);
+            io.emit("playerMoved", { token: token, x: data.x, y: data.y });
+        });
+    
+        socket.on("disconnect", () => {
+            console.log(`❌ プレイヤーが切断: ${socket.id}`);
+            delete playerTokens[socket.id]; // 🎯 切断時に `token` を削除
+        });
     });
+    
 
     // 🔹 プレイヤー切断時の処理
     socket.on("disconnect", async () => {

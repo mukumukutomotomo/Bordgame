@@ -3,7 +3,11 @@ const cols = 10;
 const board = document.getElementById("board");
 
 // WebSocket 接続
-const socket = io("https://bordgame.onrender.com");
+if (!window.socket) {
+    window.socket = io("https://bordgame.onrender.com");
+}
+const socket = window.socket;
+
 
 let skipTurn = false; // 1ターン休みフラグ
 let players = {}; // すべてのプレイヤー情報
@@ -39,19 +43,17 @@ fetch("session.php")
     socket.on("playersData", (data) => {
         console.log("📡 WebSocket からのプレイヤーデータ:", data);
     
-        players = data.players;
-        
-        // currentId が null でない場合のみ上書き
-        if (data.currentId !== null) {
-            currentId = data.currentId;
+        if (!data || !data.players) {
+            console.error("❌ `playersData` のデータが不正です！", data);
+            return;
         }
     
-        currentPlayer = players.find(p => p.id == currentId);
+        players = data.players;
     
-        if (!currentPlayer) {
-            console.error("❌ `currentPlayer` が見つかりません！ID:", currentId);
-        } else {
-            console.log(`📡 movePlayer() 実行: id=${currentPlayer.id}, x=${currentPlayer.x}, y=${currentPlayer.y}`);
+        // 🎯 `token` を `sessionStorage` に保存
+        if (data.token) {
+            sessionStorage.setItem("token", data.token);
+            console.log(`✅ プレイヤートークンを取得: ${data.token}`);
         }
     
         drawBoard();
