@@ -14,6 +14,7 @@
 
     <button id="startGame">🎮 ゲーム開始</button>
     <button id="endGame">🛑 ゲーム終了</button>
+    <button id="resetuser">データベース初期化</button>
 
     <script>
         const socket = io("https://bordgame.onrender.com");
@@ -38,6 +39,24 @@
         document.getElementById("endGame").addEventListener("click", () => {
             socket.emit("endGame");
         });
+        
+        document.getElementById("resetuser").addEventListener("click", function() {
+            if (confirm("本当にデータベースを初期化しますか？")) {
+                fetch("reset.php", {
+                    method: "POST"
+                })
+                .then(response => response.text())
+                .then(data => {
+                    if (data.trim() === "success") {
+                        alert("データベースが初期化されました。");
+                    } else {
+                        alert("エラーが発生しました: " + data);
+                    }
+                })
+                .catch(error => console.error("エラー:", error));
+            }
+        });
+
     </script>
 </body>
 </html>

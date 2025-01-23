@@ -18,7 +18,7 @@ const LOLLIPOP_API = "https://tohru-portfolio.secret.jp/bordgame/game/session.ph
 
 let players = []; // 現在のプレイヤーリスト
 
-io.on("connection", async (socket) => {
+    io.on("connection", async (socket) => {
     console.log("✅ 新しいプレイヤーが接続しました:", socket.id);
 
     try {
@@ -34,6 +34,32 @@ io.on("connection", async (socket) => {
     } catch (error) {
         console.error("❌ `session.php` からのデータ取得エラー:", error.message);
     }
+
+    socket.on("playersData", (data) => {
+        console.log("📡 WebSocket からのプレイヤーデータ:", data);
+    
+        if (!data || !data.players) {
+            console.error("❌ `playersData` のデータが不正です！", data);
+            return;
+        }
+    
+        players = data.players;
+    
+        if (data.currentId !== null) {
+            currentId = data.currentId;
+        }
+    
+        currentPlayer = players.find(p => p.id == currentId);
+    
+        if (!currentPlayer) {
+            console.error("❌ `currentPlayer` が見つかりません！ID:", currentId);
+        } else {
+            console.log(`✅ 'currentPlayer' を取得: ${currentPlayer.username} (ID: ${currentPlayer.id})`);
+        }
+    
+        drawBoard();
+    });
+    
 
     // 🔹 ゲーム開始処理
     socket.on("startGame", () => {
