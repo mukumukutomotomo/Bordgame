@@ -8,10 +8,25 @@
     <script src="https://bordgame.onrender.com/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <h1>ボードゲーム基盤 (リアルタイム対応)</h1>
-    <p id="usernameDisplay">ユーザーネーム: <span id="username">読み込み中...</span></p>
+    <h1>ボードゲーム</h1>
+    <p id="gameStatus">ゲームが開始されていません</p>
+    <div id="board" style="display: none;"></div>
+    
+    <script>
+        const socket = io("https://bordgame.onrender.com");
 
-    <div id="board"></div>
+        // ゲーム開始時の処理
+        socket.on("startGame", () => {
+            document.getElementById("gameStatus").textContent = "🎮 ゲームが開始されました！";
+            document.getElementById("board").style.display = "block";
+        });
+
+        // ゲーム終了時の処理
+        socket.on("endGame", () => {
+            document.getElementById("gameStatus").textContent = "🛑 ゲームが終了しました";
+            document.getElementById("board").style.display = "none";
+        });
+    </script>
     
     <div id="controls">
         <button id="moveForward">⬆️ 2マス進む</button>

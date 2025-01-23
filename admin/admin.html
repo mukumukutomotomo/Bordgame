@@ -1,12 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin screen
-    </title>
+    <title>ゲーム管理</title>
+    <script src="https://bordgame.onrender.com/socket.io/socket.io.js"></script>
 </head>
 <body>
-    
+    <h1>ゲーム管理画面</h1>
+
+    <h2>接続中のプレイヤー</h2>
+    <ul id="playerList"></ul>
+
+    <button id="startGame">🎮 ゲーム開始</button>
+    <button id="endGame">🛑 ゲーム終了</button>
+
+    <script>
+        const socket = io("https://bordgame.onrender.com");
+
+        // プレイヤー一覧を更新
+        socket.on("updatePlayers", (players) => {
+            const playerList = document.getElementById("playerList");
+            playerList.innerHTML = "";
+            players.forEach(player => {
+                const li = document.createElement("li");
+                li.textContent = `ID: ${player.id} - ${player.username}`;
+                playerList.appendChild(li);
+            });
+        });
+
+        // ゲーム開始ボタンを押す
+        document.getElementById("startGame").addEventListener("click", () => {
+            socket.emit("startGame");
+        });
+
+        // ゲーム終了ボタンを押す
+        document.getElementById("endGame").addEventListener("click", () => {
+            socket.emit("endGame");
+        });
+    </script>
 </body>
 </html>

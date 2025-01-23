@@ -12,67 +12,56 @@ const io = socketIo(server, {
         methods: ["GET", "POST"]
     }
 });
-io.on("connection", async (socket) => {
-    console.log("✅ 新しいプレイヤーが接続しました:", socket.id);
-
-    try {
-        const response = await axios.get("https://tohru-portfolio.secret.jp/bordgame/game/session.php");
-        console.log("📡 `session.php` からのデータ:", response.data);
-
-        if (!response.data.currentId) {
-            console.error("❌ `currentId` が null です！WebSocket でプレイヤーを識別できません。");
-        } else {
-            console.log(`✅ WebSocket で受け取った currentId: ${response.data.currentId}`);
-        }
-
-        socket.emit("playersData", response.data);
-    } catch (error) {
-        console.error("❌ `session.php` からのデータ取得エラー:", error.message);
-    }
-});
-
-
-// CORSを有効化
-app.use(cors());
 
 // ロリポップの `session.php` のURL
 const LOLLIPOP_API = "https://tohru-portfolio.secret.jp/bordgame/game/session.php"; 
 
-// WebSocket接続処理
+let players = []; // 現在のプレイヤーリスト
+
 io.on("connection", async (socket) => {
-    console.log("新しいプレイヤーが接続しました:", socket.id);
+    console.log("✅ 新しいプレイヤーが接続しました:", socket.id);
 
     try {
-        // ロリポップの `session.php` からデータを取得
-        const response = await axios.get(LOLLIPOP_API, { withCredentials: true });
+        const response = await axios.get(LOLLIPOP_API);
+        console.log("📡 `session.php` からのデータ:", response.data);
+        players = response.data.players;
 
-        // 取得したプレイヤーデータをクライアントに送信
+        // すべてのクライアントにプレイヤーリストを送信
+        io.emit("updatePlayers", players);
         socket.emit("playersData", response.data);
     } catch (error) {
-        console.error("データ取得エラー:", error.message);
+        console.error("❌ `session.php` からのデータ取得エラー:", error.message);
     }
 
-    // プレイヤー移動処理
-    socket.on("movePlayer", async (data) => {
-        console.log(`プレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
+    // ゲーム開始処理
+    socket.on("startGame", () => {
+        console.log("🎮 ゲーム開始");
+        io.emit("startGame");
+    });
 
+    // ゲーム終了処理
+    socket.on("endGame", () => {
+        console.log("🛑 ゲーム終了");
+        io.emit("endGame");
+    });
+
+    socket.on("movePlayer", async (data) => {
+        console.log(`🔄 プレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
         try {
-            // ロリポップの `update_position.php` にデータを送信
             await axios.post("https://tohru-portfolio.secret.jp/bordgame/game/update_position.php", data);
             io.emit("playerMoved", data);
         } catch (error) {
-            console.error("位置更新エラー:", error.message);
+            console.error("❌ 位置更新エラー:", error.message);
         }
     });
 
-    // 切断処理
     socket.on("disconnect", () => {
-        console.log("プレイヤーが切断しました:", socket.id);
+        console.log("❌ プレイヤーが切断しました:", socket.id);
     });
 });
 
 // ポート設定
 const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
-    console.log(`WebSocket サーバーが ${PORT} で起動しました`);
+    console.log(`🚀 WebSocket サーバーが ${PORT} で起動しました`);
 });

@@ -36,13 +36,27 @@ fetch("session.php")
         console.error("プレイヤーデータの取得に失敗:", error);
     });
 
-// WebSocket でプレイヤーデータを受け取る
-socket.on("playersData", (data) => {
-    console.log("プレイヤーデータ取得:", data);
-    players = data.players;
-    currentId = data.currentId;
-    drawBoard();
-});
+    socket.on("playersData", (data) => {
+        console.log("📡 WebSocket からのプレイヤーデータ:", data);
+    
+        players = data.players;
+        
+        // currentId が null でない場合のみ上書き
+        if (data.currentId !== null) {
+            currentId = data.currentId;
+        }
+    
+        currentPlayer = players.find(p => p.id == currentId);
+    
+        if (!currentPlayer) {
+            console.error("❌ `currentPlayer` が見つかりません！ID:", currentId);
+        } else {
+            console.log(`📡 movePlayer() 実行: id=${currentPlayer.id}, x=${currentPlayer.x}, y=${currentPlayer.y}`);
+        }
+    
+        drawBoard();
+    });
+    
 
 // 他のプレイヤーの移動をリアルタイムで受信
 socket.on("playerMoved", (data) => {
