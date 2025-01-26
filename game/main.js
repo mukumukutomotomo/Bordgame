@@ -8,25 +8,29 @@ if (!window.socket) {
 }
 const socket = window.socket;
 
-
-let skipTurn = false; // 1ターン休みフラグ
 let players = {}; // すべてのプレイヤー情報
 let currentId = null; // 自分のID
 let currentPlayer = null; // 自分のプレイヤーデータ
 
-// 初回ロード時にプレイヤーデータを取得
+// 🎯 初回ロード時に `session.php` からプレイヤー情報を取得
 fetch("session.php")
     .then(response => response.json())
     .then(data => {
         console.log("プレイヤーデータ取得:", data);
 
-        if (data.players) {
+        if (data.success) {
             players = data.players;
-            currentId = data.currentId; // 自分のIDを取得
+            currentId = data.id; // 自分のID
+            sessionStorage.setItem("playerID", currentId);
+            sessionStorage.setItem("token", data.token);
 
-            // 自分のプレイヤーデータを探す
+            // 🎯 WebSocket にプレイヤー登録
+            socket.emit("registerPlayer", {
+                id: currentId,
+                token: data.token
+            });
+
             currentPlayer = players.find(p => p.id == currentId);
-
             if (!currentPlayer) {
                 console.error("自分のプレイヤー情報が見つかりません");
             } else {
@@ -34,67 +38,45 @@ fetch("session.php")
             }
 
             drawBoard();
+        } else {
+            console.error("プレイヤーデータの取得に失敗:", data.error);
         }
     })
     .catch(error => {
-        console.error("プレイヤーデータの取得に失敗:", error);
+        console.error("サーバーエラー:", error);
     });
 
-    socket.on("playersData", (data) => {
-        console.log("📡 WebSocket からのプレイヤーデータ:", data);
-    
-        if (!data || !data.players) {
-            console.error("❌ `playersData` のデータが不正です！", data);
-            return;
-        }
-    
-        players = data.players;
-    
-        // 🎯 `token` を `sessionStorage` に保存
-        if (data.token) {
-            sessionStorage.setItem("token", data.token);
-            console.log(`✅ プレイヤートークンを取得: ${data.token}`);
-        }
-    
+// 🔹 WebSocket でプレイヤーデータを受信
+socket.on("updatePlayers", (updatedPlayers) => {
+    console.log("🆕 プレイヤーリスト更新:", updatedPlayers);
+    players = updatedPlayers;
+    drawBoard();
+});
+
+// 🎯 他のプレイヤーの移動をリアルタイムで反映
+socket.on("playerMoved", (data) => {
+    console.log(`プレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
+    const player = players.find(p => p.id == data.id);
+    if (player) {
+        player.x = data.x;
+        player.y = data.y;
         drawBoard();
-    });
-    
+    }
+});
 
-        // 他のプレイヤーの移動をリアルタイムで受信
-        socket.on("playerMoved", (data) => {
-            console.log(`プレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
-                
-            const player = players.find(p => p.id == data.id);
-            if (player) {
-                player.x = data.x;
-                player.y = data.y;
-                drawBoard();
-            }
-        });
+// 🎯 ゲーム開始処理
+socket.on("startGame", () => {
+    document.getElementById("gameStatus").textContent = "🎮 ゲームが開始されました！";
+    document.getElementById("board").style.display = "grid";
+});
 
-        // ゲーム開始時の処理
-        socket.on("startGame", () => {
-            document.getElementById("gameStatus").textContent = "🎮 ゲームが開始されました！";
-            document.getElementById("board").style.display = "grid";
-        });
+// 🎯 ゲーム終了処理
+socket.on("endGame", () => {
+    document.getElementById("gameStatus").textContent = "🛑 ゲームが終了しました";
+    document.getElementById("board").style.display = "none";
+});
 
-        // ゲーム終了時の処理
-        socket.on("endGame", () => {
-            document.getElementById("gameStatus").textContent = "🛑 ゲームが終了しました";
-            document.getElementById("board").style.display = "none";
-        });
-
-
-        socket.on("updatePlayers", (playersData) => {
-            console.log("🆕 新しいプレイヤーが追加されました:", playersData);
-        
-            // プレイヤーリストを更新
-            players = playersData;
-            drawBoard();
-        });
-        
-
-// 盤面を描画
+// 🔹 盤面を描画
 function drawBoard() {
     board.innerHTML = "";
 
@@ -103,10 +85,8 @@ function drawBoard() {
             const cell = document.createElement("div");
             cell.classList.add("cell");
 
-            // プレイヤーの位置に名前を表示
             players.forEach(player => {
                 if (player.x == x && player.y == y) {
-                    cell.classList.add("player");
                     let color = (player.id == currentId) ? "blue" : "red";
                     cell.innerHTML = `<div class="username-label" style="color: ${color}">${player.username}</div>■`;
                 }
@@ -117,7 +97,7 @@ function drawBoard() {
     }
 }
 
-// プレイヤーの移動処理
+// 🔹 プレイヤーの移動処理
 function movePlayer(steps) {
     if (!currentPlayer) {
         alert("エラー: 自分のプレイヤーデータが見つかりません");
@@ -147,81 +127,37 @@ function movePlayer(steps) {
 
     console.log(`📡 movePlayer() 実行: id=${currentId}, x=${newX}, y=${newY}`);
 
-    // WebSocket で Render に送信
+    // 🎯 WebSocket でサーバーに移動を通知
     socket.emit("movePlayer", { id: currentId, x: newX, y: newY });
 }
 
-// プレイヤーの位置をデータベースに更新
-function updatePlayerPosition(id, newX, newY) {
-    fetch("update_position.php", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ id: id, x: newX, y: newY })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log("位置更新成功:", data);
-            currentPlayer.x = newX;
-            currentPlayer.y = newY;
-            drawBoard();
-        } else {
-            console.error("位置更新エラー:", data.error);
-        }
-    })
-    .catch(error => console.error("サーバーエラー:", error));
-}
-
-//試しに作ったカード効果やバフ
+// 🔹 カードやイベント処理
 const diceButton = document.getElementById("rollDice");
 const moveForwardButton = document.getElementById("moveForward");
 const moveBackwardButton = document.getElementById("moveBackward");
 const trapButton = document.getElementById("trapButton");
 const diceResult = document.getElementById("diceResult");
 const statusText = document.getElementById("status");
-// サイコロを振る処理
+
+// 🎲 サイコロを振る処理
 diceButton.addEventListener("click", () => {
-    if (skipTurn) {
-        alert("1ターン休み中！行動できません");
-        skipTurn = false; // 次のターンから通常行動可
-        statusText.textContent = "状態: 通常";
-        return;
-    }
-    
-    const dice = Math.floor(Math.random() * 6) + 1; // 1~6のランダムな数
+    const dice = Math.floor(Math.random() * 6) + 1;
     diceResult.textContent = `出目: ${dice}`;
     movePlayer(dice);
 });
 
-// カード効果（2マス進む）
+// 🔹 2マス進む
 moveForwardButton.addEventListener("click", () => {
-    if (skipTurn) {
-        alert("1ターン休み中！行動できません");
-        skipTurn = false;
-        statusText.textContent = "状態: 通常";
-        return;
-    }
-    
     movePlayer(2);
 });
 
-// カード効果（2マス戻る）
+// 🔹 2マス戻る
 moveBackwardButton.addEventListener("click", () => {
-    if (skipTurn) {
-        alert("1ターン休み中！行動できません");
-        skipTurn = false;
-        statusText.textContent = "状態: 通常";
-        return;
-    }
-    
     movePlayer(-2);
 });
 
-// 罠効果（1ターン休み）
+// 🔹 罠（1ターン休み）
 trapButton.addEventListener("click", () => {
-    skipTurn = true;
     statusText.textContent = "状態: 1ターン休み中";
     alert("罠にかかった！次のターンは休み");
 });

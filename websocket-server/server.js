@@ -6,126 +6,99 @@ const cors = require("cors");
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
-});
+const io = socketIo(server, { cors: { origin: "*" } });
 
 // ロリポップの `session.php` のURL
-const LOLLIPOP_API = "https://tohru-portfolio.secret.jp/bordgame/game/session.php"; 
+const LOLLIPOP_API = "https://tohru-portfolio.secret.jp/bordgame/game/session.php";
 
-let players = []; // 現在のプレイヤーリスト
+let players = {}; // プレイヤーデータ (オブジェクト化)
 
-    io.on("connection", async (socket) => {
-    console.log("✅ 新しいプレイヤーが接続しました:", socket.id);
+// 🔹 WebSocket接続時の処理
+io.on("connection", async (socket) => {
+    console.log(`✅ 新しいプレイヤーが接続: ${socket.id}`);
 
     try {
         const response = await axios.get(LOLLIPOP_API);
         console.log("📡 `session.php` からのデータ:", response.data);
-        players = response.data.players;
+        
+        if (response.data.players) {
+            players = response.data.players.reduce((acc, player) => {
+                acc[player.id] = { ...player, socketId: null };
+                return acc;
+            }, {});
+        }
 
-        // すべてのクライアントにプレイヤーリストを送信 (新規接続者を含む)
-        io.emit("updatePlayers", players);
-
-        // 新しく接続したプレイヤーに現在のプレイヤーデータを送信
-        socket.emit("playersData", players);
+        // すべてのクライアントに最新のプレイヤーリストを送信
+        io.emit("updatePlayers", Object.values(players));
     } catch (error) {
         console.error("❌ `session.php` からのデータ取得エラー:", error.message);
     }
 
-    socket.on("playersData", (data) => {
-        console.log("📡 WebSocket からのプレイヤーデータ:", data);
-    
-        if (!data || !data.players) {
-            console.error("❌ `playersData` のデータが不正です！", data);
+    // 🔹 プレイヤー登録 (`registerPlayer`)
+    socket.on("registerPlayer", (data) => {
+        if (!data.id || !data.token) {
+            console.error("❌ `registerPlayer` に ID または Token が不足！");
             return;
         }
-    
-        players = data.players;
-    
-        if (data.currentId !== null) {
-            currentId = data.currentId;
-        }
-    
-        currentPlayer = players.find(p => p.id == currentId);
-    
-        if (!currentPlayer) {
-            console.error("❌ `currentPlayer` が見つかりません！ID:", currentId);
-        } else {
-            console.log(`✅ 'currentPlayer' を取得: ${currentPlayer.username} (ID: ${currentPlayer.id})`);
-        }
-    
-        drawBoard();
+
+        players[data.id] = {
+            id: data.id,
+            username: data.username || `Player${data.id}`,
+            token: data.token,
+            socketId: socket.id,
+            x: players[data.id]?.x || 0,
+            y: players[data.id]?.y || 0
+        };
+
+        console.log(`🎯 プレイヤー登録: ID=${data.id}, Token=${data.token}`);
+
+        // 最新のプレイヤーリストを全員に送信
+        io.emit("updatePlayers", Object.values(players));
     });
 
-    // プレイヤー識別
-    socket.on("connect", () => {
-    let token = sessionStorage.getItem("token");
-    if (!token) {
-        console.error("❌ `token` が見つかりません！");
-        return;
-    }
+    // 🔹 プレイヤー移動 (`movePlayer`)
+    socket.on("movePlayer", (data) => {
+        if (!data.id || !players[data.id]) {
+            console.error("❌ movePlayer() に無効な ID:", data.id);
+            return;
+        }
 
-    console.log(`📡 WebSocket に自分のトークンを登録: ${token}`);
-    socket.emit("registerPlayer", token);
-});
+        players[data.id].x = data.x;
+        players[data.id].y = data.y;
 
-    
+        console.log(`🔄 プレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
 
-    // 🔹 ゲーム開始処理
+        // 全員に移動を通知
+        io.emit("playerMoved", { id: data.id, x: data.x, y: data.y });
+    });
+
+    // 🔹 ゲーム開始
     socket.on("startGame", () => {
         console.log("🎮 ゲーム開始");
         io.emit("startGame");
     });
 
-    // 🔹 ゲーム終了処理
+    // 🔹 ゲーム終了
     socket.on("endGame", () => {
         console.log("🛑 ゲーム終了");
         io.emit("endGame");
     });
 
-    const playerTokens = {}; // 🎯 `token` と `socket.id` を紐付ける
-    
-    io.on("connection", (socket) => {
-        console.log(`✅ プレイヤーが接続: ${socket.id}`);
-    
-        socket.on("registerPlayer", (token) => {
-            console.log(`🎯 プレイヤー登録: Token=${token}`);
-            playerTokens[socket.id] = token; // 🎯 WebSocket に `token` を紐づける
-        });
-    
-        // プレイヤー移動
-        socket.on("movePlayer", (data) => {
-            const token = playerTokens[socket.id]; // 🎯 `token` を取得
-            if (!token) {
-                console.error("❌ movePlayer() に Token が渡されていません！");
-                return;
+    // 🔹 プレイヤーが切断したとき
+    socket.on("disconnect", () => {
+        console.log(`❌ プレイヤーが切断: ${socket.id}`);
+
+        // players オブジェクトから削除
+        for (let id in players) {
+            if (players[id].socketId === socket.id) {
+                console.log(`🗑️ プレイヤー ${id} を削除`);
+                delete players[id];
+                break;
             }
-    
-            console.log(`🔄 プレイヤー (Token=${token}) が移動: x=${data.x}, y=${data.y}`);
-            io.emit("playerMoved", { token: token, x: data.x, y: data.y });
-        });
-    
-        socket.on("disconnect", () => {
-            console.log(`❌ プレイヤーが切断: ${socket.id}`);
-            delete playerTokens[socket.id]; // 🎯 切断時に `token` を削除
-        });
-    });
-    
-
-    // 🔹 プレイヤー切断時の処理
-    socket.on("disconnect", async () => {
-        console.log("❌ プレイヤーが切断しました:", socket.id);
-
-        try {
-            const response = await axios.get(LOLLIPOP_API);
-            players = response.data.players;
-            io.emit("updatePlayers", players); // 切断後のプレイヤーリスト更新
-        } catch (error) {
-            console.error("❌ `session.php` からのデータ取得エラー:", error.message);
         }
+
+        // 最新のプレイヤーリストを全員に送信
+        io.emit("updatePlayers", Object.values(players));
     });
 });
 

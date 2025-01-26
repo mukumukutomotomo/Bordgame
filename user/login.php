@@ -1,48 +1,46 @@
 <?php
-session_start(); // セッション開始
+session_start();
+header("Content-Type: application/json");
+include "db.php"; // データベース接続（PDO）
 
-// データベース接続情報
-$host = 'mysql312.phy.lolipop.lan';
-$dbname = 'LAA1538186-login';
-$user = 'LAA1538186';
-$password = 'altair';
+$username = $_POST["username"] ?? null;
+if (!$username) {
+    echo json_encode(["success" => false, "error" => "ユーザーネームが空です"]);
+    exit;
+}
 
-// フォームから送信されたデータを取得
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username'])) {
-    $username = trim($_POST['username']);
+try {
+    // 既存ユーザーを検索
+    $stmt = $pdo->prepare("SELECT id FROM players WHERE username = ?");
+    $stmt->execute([$username]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!empty($username)) {
-        try {
-            // データベース接続
-            $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $password);
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-            // ユーザーをデータベースに追加（初期位置: x=0, y=0）
-            $stmt = $pdo->prepare("INSERT INTO board (username, x, y) VALUES (:username, 0, 0)");
-            $stmt->bindParam(':username', $username, PDO::PARAM_STR);
-            $stmt->execute();
-
-            // 新しく作成されたユーザーの ID を取得
-            $id = $pdo->lastInsertId();
-
-            // セッションにユーザー情報を保存
-            $_SESSION["id"] = $id;
-            $_SESSION["username"] = $username;
-
-            // デバッグ用ログ
-            error_log("ログイン成功: ID = $id, ユーザー名 = $username");
-
-            // ゲームボードへ移動
-            header("Location: /bordgame/game/index.html");
-            exit();
-        } catch (PDOException $e) {
-            error_log("データベースエラー: " . $e->getMessage());
-            echo "エラーが発生しました: " . $e->getMessage();
-        }
+    if (!$user) {
+        // ユーザーがいなければ新規登録
+        $stmt = $pdo->prepare("INSERT INTO players (username) VALUES (?)");
+        $stmt->execute([$username]);
+        $userId = $pdo->lastInsertId();
     } else {
-        echo "ユーザーネームを入力してください。";
+        // 既に存在するユーザーなら ID を取得
+        $userId = $user["id"];
     }
-} else {
-    echo "不正なリクエストです。";
+
+    // ランダムなトークンを生成
+    $token = bin2hex(random_bytes(16));
+
+    // セッションに `currentId` と `token` を保存
+    $_SESSION["currentId"] = $userId;
+    $_SESSION["token"] = $token;
+
+    // JSON レスポンスを返す
+    echo json_encode([
+        "success" => true,
+        "id" => $userId,
+        "username" => $username,
+        "token" => $token
+    ]);
+
+} catch (PDOException $e) {
+    echo json_encode(["success" => false, "error" => "データベースエラー: " . $e->getMessage()]);
 }
 ?>
