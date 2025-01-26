@@ -13,6 +13,31 @@ let currentId = null; // 自分のID
 let currentPlayer = null; // 自分のプレイヤーデータ
 
 // 🎯 初回ロード時に `session.php` からプレイヤー情報を取得
+fetch("login.php", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams({ username: "プレイヤー名" })
+})
+.then(response => {
+    if (!response.ok) {
+        throw new Error("サーバーエラー: " + response.status);
+    }
+    return response.json();
+})
+.then(data => {
+    if (data.success) {
+        console.log("✅ ログイン成功:", data);
+        sessionStorage.setItem("playerID", data.id);
+        sessionStorage.setItem("token", data.token);
+    } else {
+        console.error("❌ ログイン失敗:", data.error);
+    }
+})
+.catch(error => console.error("通信エラー:", error));
+
+
 fetch("session.php")
     .then(response => response.json())
     .then(data => {

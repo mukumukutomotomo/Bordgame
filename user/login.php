@@ -1,7 +1,10 @@
 <?php
 session_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 header("Content-Type: application/json");
-include "db.php"; // データベース接続（PDO）
+
+include "db.php"; // データベース接続
 
 $username = $_POST["username"] ?? null;
 if (!$username) {
@@ -10,25 +13,24 @@ if (!$username) {
 }
 
 try {
-    // 既存ユーザーを検索
+    // 既存ユーザーがいるかチェック
     $stmt = $pdo->prepare("SELECT id FROM players WHERE username = ?");
     $stmt->execute([$username]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user) {
-        // ユーザーがいなければ新規登録
+        // 新規ユーザーを作成
         $stmt = $pdo->prepare("INSERT INTO players (username) VALUES (?)");
         $stmt->execute([$username]);
         $userId = $pdo->lastInsertId();
     } else {
-        // 既に存在するユーザーなら ID を取得
         $userId = $user["id"];
     }
 
-    // ランダムなトークンを生成
+    // トークンを生成
     $token = bin2hex(random_bytes(16));
 
-    // セッションに `currentId` と `token` を保存
+    // セッションに保存
     $_SESSION["currentId"] = $userId;
     $_SESSION["token"] = $token;
 
@@ -39,8 +41,9 @@ try {
         "username" => $username,
         "token" => $token
     ]);
-
+    exit;
 } catch (PDOException $e) {
     echo json_encode(["success" => false, "error" => "データベースエラー: " . $e->getMessage()]);
+    exit;
 }
 ?>
