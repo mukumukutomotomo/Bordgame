@@ -20,33 +20,48 @@ let players = {};  // 全プレイヤー情報
 let currentPlayer = null;  // 自分のプレイヤーデータ
 const board = document.getElementById("board");
 const playerToken = sessionStorage.getItem("playerToken");
-// `session.php` に `token` を送信し、自分のデータを取得
+console.log("📌 送信する token:", playerToken);
 fetch("session.php", {
     method: "POST",
     headers: {
         "Content-Type": "application/x-www-form-urlencoded"
     },
-    body: new URLSearchParams({ token: playerToken }) // ← `token` を送信
+    body: new URLSearchParams({ token: playerToken })
 })
 .then(response => response.json())
 .then(data => {
+    console.log("📌 session.php のレスポンス:", data);
+
     if (data.success) {
-        players = data.players;  // 全プレイヤーデータ
-        currentPlayer = data.currentPlayer;  // 🎯 自分のプレイヤーデータ
+        players = {};
+        data.players.forEach(player => {
+            players[player.id] = player;
+        });        
+        currentPlayer = data.currentPlayer;
+
+        if (!currentPlayer) {
+            console.error("❌ currentPlayer が取得できていません");
+            return;
+        }
 
         console.log("✅ 自分のプレイヤーデータ:", currentPlayer);
+
+        // 🎯 プレイヤー登録をサーバーに送信
+        socket.emit("registerPlayer", {
+            id: currentPlayer.id,
+            username: currentPlayer.username,
+            token: playerToken,
+            x: currentPlayer.x,
+            y: currentPlayer.y
+        });
+
         drawBoard();
     } else {
-        console.error("プレイヤーデータ取得失敗:", data.error);
+        console.error("❌ プレイヤーデータ取得失敗:", data.error);
     }
 });
-socket.emit("registerPlayer", {
-    id: currentPlayer.id,
-    username: currentPlayer.username,
-    token: localStorage.getItem("playerToken"),
-    x: currentPlayer.x,
-    y: currentPlayer.y
-});
+
+
 
 
 function drawBoard() {
@@ -124,12 +139,30 @@ function movePlayer(steps) {
     // 🎯 WebSocket でサーバーに移動を通知
     socket.emit("movePlayer", { id: currentPlayer.id, x: newX, y: newY });
 
-    // 自分のデータを更新
-    currentPlayer.x = newX;
-    currentPlayer.y = newY;
+    // 🎯 `players` のデータを更新
+    if (players[currentPlayer.id]) {
+        players[currentPlayer.id].x = newX;
+        players[currentPlayer.id].y = newY;
+    }
+
+    console.log("📌 更新後の players:", JSON.stringify(players, null, 2));
 
     drawBoard();
 }
+
+
+socket.on("playerMoved", (data) => {
+    console.log(`📌 playerMoved 受信: id=${data.id}, x=${data.x}, y=${data.y}`);
+
+    if (players[data.id]) {
+        players[data.id].x = data.x;
+        players[data.id].y = data.y;
+        drawBoard();
+    } else {
+        console.error(`❌ players に ID=${data.id} のプレイヤーが存在しません`);
+    }
+});
+
 
 
 function drawBoard() {

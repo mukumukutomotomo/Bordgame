@@ -58,23 +58,25 @@ io.on("connection", async (socket) => {
     });
     
 
-    // 🔹 プレイヤー移動 (`movePlayer`)
     socket.on("movePlayer", (data) => {
         console.log("📌 movePlayer() 受信:", data);
-        console.log("📌 現在の players:", players);
+        console.log("📌 現在の players:", JSON.stringify(players, null, 2));
     
         if (!data.id || !players[data.id]) {
             console.error("❌ movePlayer() に無効な ID:", data.id);
             return;
         }
     
+        // 🎯 サーバー上の `players` データを更新
         players[data.id].x = data.x;
         players[data.id].y = data.y;
     
         console.log(`🔄 プレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
     
+        // 🎯 全プレイヤーに移動を通知
         io.emit("playerMoved", { id: data.id, x: data.x, y: data.y });
     });
+    
     
 
     // 🔹 ゲーム開始
