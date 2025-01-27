@@ -210,6 +210,7 @@ socket.on("updatePlayers", (data) => {
 });
 
 
+
 socket.on("endGame", () => {
     document.getElementById("gameStatus").textContent = "🛑 ゲームが終了しました";
     document.getElementById("board").style.display = "none";
