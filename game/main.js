@@ -196,6 +196,22 @@ function drawBoard() {
 
 
 
+socket.on("startGame", () => {
+    console.log("🎮 ゲームが開始されました！");
+
+    // 🎯 ゲーム開始時に盤面を表示
+    const boardElement = document.getElementById("board");
+    if (boardElement) {
+        boardElement.style.display = "grid"; // 盤面を表示
+    } else {
+        console.error("❌ `#board` が見つかりません");
+    }
+
+    document.getElementById("gameStatus").textContent = "🎮 ゲームが開始されました！";
+
+    drawBoard(); 
+});
+
 socket.on("updatePlayers", (data) => {
     console.log("📡 updatePlayers 受信:", data);
 
@@ -206,9 +222,7 @@ socket.on("updatePlayers", (data) => {
     });
 
     console.log("✅ 更新後の players:", players);
-    drawBoard();
 });
-
 
 
 socket.on("endGame", () => {

@@ -112,13 +112,6 @@ io.on("connection", async (socket) => {
         io.emit("updatePlayers", Object.values(players));
     
         // 🎯 全プレイヤーを再取得後、ゲーム開始
-            // 🎯 盤面の非表示を解除し、ゲーム開始
-        const boardElement = document.getElementById("board");
-        if (boardElement) {
-            boardElement.style.display = "grid"; // 盤面を表示
-        } else {
-            console.error("❌ `#board` が見つかりません");
-        }
         console.log("🎮 ゲームを開始します！");
         io.emit("startGame");
     });
