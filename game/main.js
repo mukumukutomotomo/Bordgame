@@ -104,20 +104,20 @@ function movePlayer(steps) {
 
     for (let i = 0; i < Math.abs(steps); i++) {
         if (steps > 0) {
-            if (newY % 2 === 0) {
+            if (newY % 2 === 0) {  // 偶数行なら右へ
                 if (newX < 9) {
                     newX++;
-                } else if (newY < 9) {
+                } else if (newY < 9) {  // 端に達したら次の行へ
                     newY++;
                 }
-            } else {
+            } else {  // 奇数行なら左へ
                 if (newX > 0) {
                     newX--;
-                } else if (newY < 9) {
+                } else if (newY < 9) {  // 端に達したら次の行へ
                     newY++;
                 }
             }
-        } else {
+        } else {  // 後退する場合
             if (newY % 2 === 0) {
                 if (newX > 0) {
                     newX--;
@@ -147,8 +147,30 @@ function movePlayer(steps) {
 
     console.log("📌 更新後の players:", JSON.stringify(players, null, 2));
 
+    // 🎯 データベースに移動後の座標を保存
+    fetch("update_position.php", {  // 新しいAPI (update_position.php) を作成
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+            token: sessionStorage.getItem("playerToken"),
+            x: newX,
+            y: newY
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            console.error("❌ データベース更新失敗:", data.error);
+        } else {
+            console.log("✅ データベースにプレイヤー座標を保存:", data);
+        }
+    });
+
     drawBoard();
 }
+
 
 
 socket.on("playerMoved", (data) => {
@@ -163,36 +185,6 @@ socket.on("playerMoved", (data) => {
     }
 });
 
-
-
-function drawBoard() {
-    board.innerHTML = "";
-
-    for (let y = 0; y < 10; y++) {
-        for (let x = 0; x < 10; x++) {
-            const cell = document.createElement("div");
-            cell.classList.add("cell");
-
-            let playerInCell = false;
-            Object.values(players).forEach(player => {
-                if (player.x == x && player.y == y) {
-                    playerInCell = true;
-                    const playerElement = document.createElement("div");
-                    playerElement.classList.add("player");
-                    playerElement.textContent = "■";
-                    playerElement.style.color = (player.token == currentPlayer.token) ? "blue" : "red";
-                    cell.appendChild(playerElement);
-                }
-            });
-
-            if (!playerInCell) {
-                cell.style.backgroundColor = "#ddd"; // 空のセルを明るい色にする
-            }
-
-            board.appendChild(cell);
-        }
-    }
-}
 
 
 
