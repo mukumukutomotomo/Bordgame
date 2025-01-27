@@ -21,7 +21,7 @@ io.on("connection", async (socket) => {
         const response = await axios.get(LOLLIPOP_API);
         console.log("📡 `session.php` からのデータ:", response.data);
         
-        if (response.data.players) {
+        if (response.data.board) {
             players = response.data.players.reduce((acc, player) => {
                 acc[player.id] = { ...player, socketId: null };
                 return acc;

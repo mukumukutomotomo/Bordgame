@@ -1,131 +1,81 @@
-const rows = 10;
-const cols = 10;
+const socket = io("https://bordgame.onrender.com");
+
+
+// Token取得関数
+function getTokenFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("token");
+}
+
+// 🎯 URL から `token` を取得し、`sessionStorage` に保存
+const token = getTokenFromURL();
+
+if (token) {
+    console.log("✅ URL から取得した token:", token);
+    sessionStorage.setItem("playerToken", token);
+} else {
+    console.error("❌ トークンが見つかりません");
+}
+
+let players = {};  // 全プレイヤー情報
+let currentPlayer = null;  // 自分のプレイヤーデータ
 const board = document.getElementById("board");
 
-// WebSocket 接続
-if (!window.socket) {
-    window.socket = io("https://bordgame.onrender.com");
-}
-const socket = window.socket;
+// 🎯 `sessionStorage` から `token` を取得
+const playerToken = sessionStorage.getItem("playerToken");
 
-let players = {}; // すべてのプレイヤー情報
-let currentId = null; // 自分のID
-let currentPlayer = null; // 自分のプレイヤーデータ
-
-// 🎯 初回ロード時に `session.php` からプレイヤー情報を取得
-fetch("login.php", {
+// `session.php` に `token` を送信し、自分のデータを取得
+fetch("session.php", {
     method: "POST",
     headers: {
         "Content-Type": "application/x-www-form-urlencoded"
     },
-    body: new URLSearchParams({ username: "プレイヤー名" })
+    body: new URLSearchParams({ token: playerToken }) // ← `token` を送信
 })
-.then(response => {
-    if (!response.ok) {
-        throw new Error("サーバーエラー: " + response.status);
-    }
-    return response.json();
-})
+.then(response => response.json())
 .then(data => {
     if (data.success) {
-        console.log("✅ ログイン成功:", data);
-        sessionStorage.setItem("playerID", data.id);
-        sessionStorage.setItem("token", data.token);
-    } else {
-        console.error("❌ ログイン失敗:", data.error);
-    }
-})
-.catch(error => console.error("通信エラー:", error));
+        players = data.players;  // 全プレイヤーデータ
+        currentPlayer = data.currentPlayer;  // 🎯 自分のプレイヤーデータ
 
-
-fetch("session.php")
-    .then(response => response.json())
-    .then(data => {
-        console.log("プレイヤーデータ取得:", data);
-
-        if (data.success) {
-            players = data.players;
-            currentId = data.id; // 自分のID
-            sessionStorage.setItem("playerID", currentId);
-            sessionStorage.setItem("token", data.token);
-
-            // 🎯 WebSocket にプレイヤー登録
-            socket.emit("registerPlayer", {
-                id: currentId,
-                token: data.token
-            });
-
-            currentPlayer = players.find(p => p.id == currentId);
-            if (!currentPlayer) {
-                console.error("自分のプレイヤー情報が見つかりません");
-            } else {
-                console.log("自分のプレイヤーデータ:", currentPlayer);
-            }
-
-            drawBoard();
-        } else {
-            console.error("プレイヤーデータの取得に失敗:", data.error);
-        }
-    })
-    .catch(error => {
-        console.error("サーバーエラー:", error);
-    });
-
-// 🔹 WebSocket でプレイヤーデータを受信
-socket.on("updatePlayers", (updatedPlayers) => {
-    console.log("🆕 プレイヤーリスト更新:", updatedPlayers);
-    players = updatedPlayers;
-    drawBoard();
-});
-
-// 🎯 他のプレイヤーの移動をリアルタイムで反映
-socket.on("playerMoved", (data) => {
-    console.log(`プレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
-    const player = players.find(p => p.id == data.id);
-    if (player) {
-        player.x = data.x;
-        player.y = data.y;
+        console.log("✅ 自分のプレイヤーデータ:", currentPlayer);
         drawBoard();
+    } else {
+        console.error("プレイヤーデータ取得失敗:", data.error);
     }
 });
-
-// 🎯 ゲーム開始処理
-socket.on("startGame", () => {
-    document.getElementById("gameStatus").textContent = "🎮 ゲームが開始されました！";
-    document.getElementById("board").style.display = "grid";
-});
-
-// 🎯 ゲーム終了処理
-socket.on("endGame", () => {
-    document.getElementById("gameStatus").textContent = "🛑 ゲームが終了しました";
-    document.getElementById("board").style.display = "none";
-});
-
-// 🔹 盤面を描画
 function drawBoard() {
+    console.log("📌 drawBoard() 実行");
     board.innerHTML = "";
 
-    for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
+    for (let y = 0; y < 10; y++) {
+        for (let x = 0; x < 10; x++) {
             const cell = document.createElement("div");
             cell.classList.add("cell");
 
-            players.forEach(player => {
+            let playerInCell = false;
+            Object.values(players).forEach(player => {
                 if (player.x == x && player.y == y) {
-                    let color = (player.id == currentId) ? "blue" : "red";
-                    cell.innerHTML = `<div class="username-label" style="color: ${color}">${player.username}</div>■`;
+                    playerInCell = true;
+                    const playerElement = document.createElement("div");
+                    playerElement.classList.add("player");
+                    playerElement.textContent = "■";
+                    playerElement.style.color = (player.token == currentPlayer.token) ? "blue" : "red";
+                    cell.appendChild(playerElement);
                 }
             });
+
+            if (!playerInCell) {
+                cell.style.backgroundColor = "#ddd"; // 空のセルを明るい色にする
+            }
 
             board.appendChild(cell);
         }
     }
 }
-
-// 🔹 プレイヤーの移動処理
 function movePlayer(steps) {
     if (!currentPlayer) {
-        alert("エラー: 自分のプレイヤーデータが見つかりません");
+        console.error("❌ 自分のプレイヤーデータが見つかりません");
         return;
     }
 
@@ -135,26 +85,91 @@ function movePlayer(steps) {
     for (let i = 0; i < Math.abs(steps); i++) {
         if (steps > 0) {
             if (newY % 2 === 0) {
-                if (newX < cols - 1) {
+                if (newX < 9) {
                     newX++;
-                } else if (newY < rows - 1) {
+                } else if (newY < 9) {
                     newY++;
                 }
             } else {
                 if (newX > 0) {
                     newX--;
-                } else if (newY < rows - 1) {
+                } else if (newY < 9) {
                     newY++;
+                }
+            }
+        } else {
+            if (newY % 2 === 0) {
+                if (newX > 0) {
+                    newX--;
+                } else if (newY > 0) {
+                    newY--;
+                }
+            } else {
+                if (newX < 9) {
+                    newX++;
+                } else if (newY > 0) {
+                    newY--;
                 }
             }
         }
     }
 
-    console.log(`📡 movePlayer() 実行: id=${currentId}, x=${newX}, y=${newY}`);
+    console.log(`📌 movePlayer() 実行: id=${currentPlayer.id}, x=${newX}, y=${newY}`);
 
     // 🎯 WebSocket でサーバーに移動を通知
-    socket.emit("movePlayer", { id: currentId, x: newX, y: newY });
+    socket.emit("movePlayer", { id: currentPlayer.id, x: newX, y: newY });
+
+    // 自分のデータを更新
+    currentPlayer.x = newX;
+    currentPlayer.y = newY;
+
+    drawBoard();
 }
+
+
+function drawBoard() {
+    board.innerHTML = "";
+
+    for (let y = 0; y < 10; y++) {
+        for (let x = 0; x < 10; x++) {
+            const cell = document.createElement("div");
+            cell.classList.add("cell");
+
+            let playerInCell = false;
+            Object.values(players).forEach(player => {
+                if (player.x == x && player.y == y) {
+                    playerInCell = true;
+                    const playerElement = document.createElement("div");
+                    playerElement.classList.add("player");
+                    playerElement.textContent = "■";
+                    playerElement.style.color = (player.token == currentPlayer.token) ? "blue" : "red";
+                    cell.appendChild(playerElement);
+                }
+            });
+
+            if (!playerInCell) {
+                cell.style.backgroundColor = "#ddd"; // 空のセルを明るい色にする
+            }
+
+            board.appendChild(cell);
+        }
+    }
+}
+
+
+
+socket.on("startGame", () => {
+    console.log("🎮 ゲームが開始されました！");
+    document.getElementById("gameStatus").textContent = "🎮 ゲームが開始されました！";
+    document.getElementById("board").style.display = "grid";
+    
+    drawBoard(); 
+});
+
+socket.on("endGame", () => {
+    document.getElementById("gameStatus").textContent = "🛑 ゲームが終了しました";
+    document.getElementById("board").style.display = "none";
+});
 
 // 🔹 カードやイベント処理
 const diceButton = document.getElementById("rollDice");

@@ -1,49 +1,45 @@
 <?php
-session_start();
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-header("Content-Type: application/json");
+header("Content-Type: application/json"); // JSONのヘッダーを明示的に指定
+include('db.php');
 
-include "db.php"; // データベース接続
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $username = trim($_POST["username"]);
 
-$username = $_POST["username"] ?? null;
-if (!$username) {
-    echo json_encode(["success" => false, "error" => "ユーザーネームが空です"]);
-    exit;
-}
-
-try {
-    // 既存ユーザーがいるかチェック
-    $stmt = $pdo->prepare("SELECT id FROM players WHERE username = ?");
-    $stmt->execute([$username]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$user) {
-        // 新規ユーザーを作成
-        $stmt = $pdo->prepare("INSERT INTO players (username) VALUES (?)");
-        $stmt->execute([$username]);
-        $userId = $pdo->lastInsertId();
-    } else {
-        $userId = $user["id"];
+    if (empty($username)) {
+        echo json_encode(["success" => false, "error" => "ユーザーネームを入力してください"]);
+        exit;
     }
 
-    // トークンを生成
-    $token = bin2hex(random_bytes(16));
+    try {
+        $stmt = $pdo->prepare("SELECT id FROM board WHERE username = :username");
+        $stmt->bindParam(':username', $username, PDO::PARAM_STR);
+        $stmt->execute();
+        $existingUser = $stmt->fetch();
 
-    // セッションに保存
-    $_SESSION["currentId"] = $userId;
-    $_SESSION["token"] = $token;
+        if ($existingUser) {
+            echo json_encode(["success" => false, "error" => "同じユーザーネームが既に存在します"]);
+            exit;
+        }
 
-    // JSON レスポンスを返す
-    echo json_encode([
-        "success" => true,
-        "id" => $userId,
-        "username" => $username,
-        "token" => $token
-    ]);
-    exit;
-} catch (PDOException $e) {
-    echo json_encode(["success" => false, "error" => "データベースエラー: " . $e->getMessage()]);
-    exit;
+        $token = bin2hex(random_bytes(16));
+        $stmt = $pdo->prepare("INSERT INTO board (username, token, x, y) VALUES (:username, :token, 0, 0)");
+        $stmt->bindParam(':username', $username, PDO::PARAM_STR);
+        $stmt->bindParam(':token', $token, PDO::PARAM_STR);
+        $stmt->execute();
+
+        $userId = $pdo->lastInsertId();
+        session_start();
+        $_SESSION["user_id"] = $userId;
+        $_SESSION["username"] = $username;
+        $_SESSION["token"] = $token;
+
+        echo json_encode([
+            "success" => true,
+            "token" => $token,  // ✅ `token` を返す
+            "redirect" => "https://tohru-portfolio.secret.jp/bordgame/game/index.html"
+        ]);        
+    } catch (PDOException $e) {
+        echo json_encode(["success" => false, "error" => "データベースエラー: " . $e->getMessage()]);
+    }
 }
 ?>

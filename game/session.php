@@ -1,30 +1,37 @@
 <?php
-session_start();
-header('Content-Type: application/json');
+header("Content-Type: application/json");
+include('db.php');
 
-$host = 'mysql312.phy.lolipop.lan';
-$dbname = 'LAA1538186-login';
-$user = 'LAA1538186';
-$password = 'altair';
+session_start();
+
+// クライアントから `token` を受け取る
+$token = isset($_POST["token"]) ? $_POST["token"] : '';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    // すべてのプレイヤーの情報を取得
-    $stmt = $pdo->query("SELECT id, username, x, y FROM board");
+    // すべてのプレイヤー情報を取得
+    $stmt = $pdo->query("SELECT id, username, token, x, y FROM board");
     $players = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // プレイヤーごとに `token` を発行（ログイン時に 1 回だけ）
-    if (!isset($_SESSION["token"])) {
-        $_SESSION["token"] = bin2hex(random_bytes(16)); // 16バイトのランダムトークン
+    // 🎯 `token` に一致するプレイヤーを見つける
+    $currentPlayer = null;
+    foreach ($players as $player) {
+        if ($player["token"] == $token) {
+            $currentPlayer = $player;
+            break;
+        }
+    }
+
+    if (!$currentPlayer) {
+        echo json_encode(["success" => false, "error" => "認証エラー: プレイヤーが見つかりません"]);
+        exit;
     }
 
     echo json_encode([
-        "players" => $players,
-        "token" => $_SESSION["token"] // 🎯 各プレイヤーごとにトークンを割り当てる
-    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        "success" => true,
+        "players" => $players,  // 全プレイヤーの情報
+        "currentPlayer" => $currentPlayer  // 自分の情報
+    ]);
 } catch (PDOException $e) {
-    echo json_encode(["error" => "データベース接続エラー: " . $e->getMessage()]);
+    echo json_encode(["success" => false, "error" => "データベースエラー: " . $e->getMessage()]);
 }
 ?>
