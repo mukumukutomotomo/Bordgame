@@ -34,43 +34,47 @@ io.on("connection", async (socket) => {
         console.error("❌ `session.php` からのデータ取得エラー:", error.message);
     }
 
-    // 🔹 プレイヤー登録 (`registerPlayer`)
     socket.on("registerPlayer", (data) => {
+        console.log("📌 registerPlayer() 受信:", data);
+    
         if (!data.id || !data.token) {
             console.error("❌ `registerPlayer` に ID または Token が不足！");
             return;
         }
-
+    
         players[data.id] = {
             id: data.id,
             username: data.username || `Player${data.id}`,
             token: data.token,
             socketId: socket.id,
-            x: players[data.id]?.x || 0,
-            y: players[data.id]?.y || 0
+            x: data.x || 0,
+            y: data.y || 0
         };
-
-        console.log(`🎯 プレイヤー登録: ID=${data.id}, Token=${data.token}`);
-
-        // 最新のプレイヤーリストを全員に送信
+    
+        console.log(`✅ プレイヤー登録: ID=${data.id}, Token=${data.token}, x=${players[data.id].x}, y=${players[data.id].y}`);
+    
         io.emit("updatePlayers", Object.values(players));
     });
+    
 
     // 🔹 プレイヤー移動 (`movePlayer`)
     socket.on("movePlayer", (data) => {
+        console.log("📌 movePlayer() 受信:", data);
+        console.log("📌 現在の players:", players);
+    
         if (!data.id || !players[data.id]) {
             console.error("❌ movePlayer() に無効な ID:", data.id);
             return;
         }
-
+    
         players[data.id].x = data.x;
         players[data.id].y = data.y;
-
+    
         console.log(`🔄 プレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
-
-        // 全員に移動を通知
+    
         io.emit("playerMoved", { id: data.id, x: data.x, y: data.y });
     });
+    
 
     // 🔹 ゲーム開始
     socket.on("startGame", () => {

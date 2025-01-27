@@ -16,6 +16,13 @@ if (token) {
 } else {
     console.error("❌ トークンが見つかりません");
 }
+socket.emit("registerPlayer", {
+    id: currentPlayer.id,
+    token: playerToken,
+    x: currentPlayer.x,
+    y: currentPlayer.y
+});
+
 
 let players = {};  // 全プレイヤー情報
 let currentPlayer = null;  // 自分のプレイヤーデータ
