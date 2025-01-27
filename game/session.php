@@ -4,17 +4,31 @@ include('db.php');
 
 session_start();
 
+// 🎯 サーバー管理者用の特別なトークンを設定
+$serverAdminToken = "SERVER_ADMIN_TOKEN";
+
+// クライアントから `token` を受け取る
 $token = isset($_POST["token"]) ? $_POST["token"] : '';
 
-error_log("📌 受信した token: " . $token);
+if (empty($token) || $token === $serverAdminToken) {
+    try {
+        // 🎯 サーバーからのリクエスト（`startGame`）では全プレイヤーを取得
+        $stmt = $pdo->query("SELECT id, username, token, x, y FROM board");
+        $players = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-if (empty($token)) {
-    echo json_encode(["success" => false, "error" => "トークンが送信されていません"]);
-    exit;
+        echo json_encode([
+            "success" => true,
+            "players" => $players
+        ], JSON_PRETTY_PRINT);
+        exit;
+    } catch (PDOException $e) {
+        echo json_encode(["success" => false, "error" => "データベースエラー: " . $e->getMessage()]);
+        exit;
+    }
 }
 
 try {
-    // `token` に一致するプレイヤーを取得
+    // 🎯 通常のプレイヤーリクエスト（`token` に対応するプレイヤーを取得）
     $stmt = $pdo->prepare("SELECT id, username, token, x, y FROM board WHERE token = :token");
     $stmt->bindParam(":token", $token, PDO::PARAM_STR);
     $stmt->execute();
@@ -25,7 +39,6 @@ try {
         exit;
     }
 
-    // 全プレイヤー情報を取得
     $stmt = $pdo->query("SELECT id, username, token, x, y FROM board");
     $players = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

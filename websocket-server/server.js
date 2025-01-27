@@ -83,8 +83,13 @@ io.on("connection", async (socket) => {
         console.log("🎮 ゲーム開始要求を受信");
     
         try {
-            // 最新のプレイヤー情報を取得
-            const response = await axios.get(LOLLIPOP_API);
+            // 🎯 `session.php` に `POST` で `token` を送信
+            const response = await axios.post(LOLLIPOP_API, new URLSearchParams({
+                token: "SERVER_ADMIN_TOKEN" 
+            }).toString(), {
+                headers: { "Content-Type": "application/x-www-form-urlencoded" }
+            });
+    
             console.log("📡 `session.php` からのデータ:", response.data);
     
             if (response.data.success) {
@@ -110,6 +115,7 @@ io.on("connection", async (socket) => {
         console.log("🎮 ゲームを開始します！");
         io.emit("startGame");
     });
+    
 
 
     // 🔹 ゲーム終了
