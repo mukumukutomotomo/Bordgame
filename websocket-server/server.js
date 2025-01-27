@@ -52,6 +52,7 @@ io.on("connection", async (socket) => {
         };
     
         console.log(`✅ プレイヤー登録: ID=${data.id}, Token=${data.token}, x=${players[data.id].x}, y=${players[data.id].y}`);
+        console.log("📌 現在の players:", JSON.stringify(players, null, 2));
     
         io.emit("updatePlayers", Object.values(players));
     });

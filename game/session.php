@@ -7,6 +7,22 @@ session_start();
 // クライアントから `token` を受け取る
 $token = isset($_POST["token"]) ? $_POST["token"] : '';
 
+// デバッグ用: 直接 `session.php` を開いたときに全データを表示
+if ($_SERVER["REQUEST_METHOD"] === "GET") {
+    try {
+        $stmt = $pdo->query("SELECT * FROM board");
+        $players = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode([
+            "success" => true,
+            "players" => $players
+        ], JSON_PRETTY_PRINT);
+    } catch (PDOException $e) {
+        echo json_encode(["success" => false, "error" => "データベースエラー: " . $e->getMessage()]);
+    }
+    exit;
+}
+
 if (empty($token)) {
     echo json_encode(["success" => false, "error" => "トークンが送信されていません"]);
     exit;
@@ -32,7 +48,7 @@ try {
         "success" => true,
         "players" => $players,
         "currentPlayer" => $currentPlayer
-    ]);
+    ], JSON_PRETTY_PRINT);
 } catch (PDOException $e) {
     echo json_encode(["success" => false, "error" => "データベースエラー: " . $e->getMessage()]);
 }

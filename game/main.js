@@ -1,6 +1,4 @@
 const socket = io("https://bordgame.onrender.com");
-
-
 // Token取得関数
 function getTokenFromURL() {
     const params = new URLSearchParams(window.location.search);
@@ -16,21 +14,12 @@ if (token) {
 } else {
     console.error("❌ トークンが見つかりません");
 }
-socket.emit("registerPlayer", {
-    id: currentPlayer.id,
-    token: playerToken,
-    x: currentPlayer.x,
-    y: currentPlayer.y
-});
 
 
 let players = {};  // 全プレイヤー情報
 let currentPlayer = null;  // 自分のプレイヤーデータ
 const board = document.getElementById("board");
-
-// 🎯 `sessionStorage` から `token` を取得
 const playerToken = sessionStorage.getItem("playerToken");
-
 // `session.php` に `token` を送信し、自分のデータを取得
 fetch("session.php", {
     method: "POST",
@@ -51,6 +40,15 @@ fetch("session.php", {
         console.error("プレイヤーデータ取得失敗:", data.error);
     }
 });
+socket.emit("registerPlayer", {
+    id: currentPlayer.id,
+    username: currentPlayer.username,
+    token: localStorage.getItem("playerToken"),
+    x: currentPlayer.x,
+    y: currentPlayer.y
+});
+
+
 function drawBoard() {
     console.log("📌 drawBoard() 実行");
     board.innerHTML = "";
