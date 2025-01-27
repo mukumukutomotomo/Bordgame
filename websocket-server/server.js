@@ -79,11 +79,38 @@ io.on("connection", async (socket) => {
     
     
 
-    // 🔹 ゲーム開始
-    socket.on("startGame", () => {
-        console.log("🎮 ゲーム開始");
+    socket.on("startGame", async () => {
+        console.log("🎮 ゲーム開始要求を受信");
+    
+        try {
+            // 最新のプレイヤー情報を取得
+            const response = await axios.get(LOLLIPOP_API);
+            console.log("📡 `session.php` からのデータ:", response.data);
+    
+            if (response.data.success) {
+                players = response.data.players.reduce((acc, player) => {
+                    acc[player.id] = { ...player, socketId: null };
+                    return acc;
+                }, {});
+    
+                console.log("✅ 最新のプレイヤーリスト:", players);
+            } else {
+                console.error("❌ `session.php` からプレイヤーデータを取得できませんでした:", response.data.error);
+                return;
+            }
+        } catch (error) {
+            console.error("❌ `session.php` からのデータ取得エラー:", error.message);
+            return;
+        }
+    
+        // 最新のプレイヤーデータを全員に送信
+        io.emit("updatePlayers", Object.values(players));
+    
+        // 🎯 全プレイヤーを再取得後、ゲーム開始
+        console.log("🎮 ゲームを開始します！");
         io.emit("startGame");
     });
+
 
     // 🔹 ゲーム終了
     socket.on("endGame", () => {

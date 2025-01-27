@@ -196,13 +196,19 @@ function drawBoard() {
 
 
 
-socket.on("startGame", () => {
-    console.log("🎮 ゲームが開始されました！");
-    document.getElementById("gameStatus").textContent = "🎮 ゲームが開始されました！";
-    document.getElementById("board").style.display = "grid";
-    
-    drawBoard(); 
+socket.on("updatePlayers", (data) => {
+    console.log("📡 updatePlayers 受信:", data);
+
+    // 🎯 `players` を最新のデータに更新
+    players = {};
+    data.forEach(player => {
+        players[player.id] = player;
+    });
+
+    console.log("✅ 更新後の players:", players);
+    drawBoard();
 });
+
 
 socket.on("endGame", () => {
     document.getElementById("gameStatus").textContent = "🛑 ゲームが終了しました";
