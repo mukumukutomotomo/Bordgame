@@ -17,7 +17,7 @@ if (!$token || $newX === null || $newY === null) {
 }
 
 // プレイヤーの `x, y` を更新
-$stmt = $pdo->prepare("UPDATE players SET x = ?, y = ? WHERE token = ?");
+$stmt = $pdo->prepare("UPDATE board SET x = ?, y = ? WHERE token = ?");
 $updated = $stmt->execute([$newX, $newY, $token]);
 
 // 更新結果を返す
