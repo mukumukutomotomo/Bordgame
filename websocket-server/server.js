@@ -59,23 +59,24 @@ io.on("connection", async (socket) => {
             console.error("❌ ルームIDが指定されていません");
             return;
         }
-
+    
         console.log(`🎮 ルーム ${data.room} でゲーム開始`);
-
+    
         try {
+            // 🎯 `session.php` に `roomID` を含めてリクエスト
             const response = await axios.post(LOLLIPOP_API, new URLSearchParams({
                 token: "SERVER_ADMIN_TOKEN",
-                room: data.room
+                room: data.room  // ここを追加！
             }).toString(), {
                 headers: { "Content-Type": "application/x-www-form-urlencoded" }
             });
-
+    
             if (response.data.success) {
                 rooms[data.room] = response.data.players.reduce((acc, player) => {
                     acc[player.id] = { ...player, socketId: null };
                     return acc;
                 }, {});
-
+    
                 console.log(`✅ ルーム ${data.room} の最新プレイヤーリスト更新`);
             } else {
                 console.error(`❌ ルーム ${data.room} のプレイヤーデータ取得失敗:`, response.data.error);
@@ -85,10 +86,11 @@ io.on("connection", async (socket) => {
             console.error(`❌ ルーム ${data.room} の session.php データ取得エラー:`, error.message);
             return;
         }
-
+    
         io.to(data.room).emit("updatePlayers", Object.values(rooms[data.room]));
         io.to(data.room).emit("startGame");
     });
+    
 
     socket.on("endGame", (data) => {
         if (!data.room) {

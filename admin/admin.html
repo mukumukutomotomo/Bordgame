@@ -9,46 +9,104 @@
 <body>
     <h1>ゲーム管理画面</h1>
 
+    <h2>ルーム選択</h2>
+    <select id="roomSelect">
+        <option value="">ルームを選択</option>
+    </select>
+
     <h2>接続中のプレイヤー</h2>
     <ul id="playerList"></ul>
 
     <button id="startGame">🎮 ゲーム開始</button>
     <button id="endGame">🛑 ゲーム終了</button>
-    <button id="resetuser">データベース初期化</button>
+    <button id="resetRoom">🔄 ルームデータを初期化</button>
 
     <script>
         const socket = io("https://bordgame.onrender.com");
 
-        // プレイヤー一覧を更新
-        socket.on("updatePlayers", (players) => {
-            const playerList = document.getElementById("playerList");
-            playerList.innerHTML = "";
-            players.forEach(player => {
-                const li = document.createElement("li");
-                li.textContent = `ID: ${player.id} - ${player.username}`;
-                playerList.appendChild(li);
-            });
+        // 🎯 ルームリストを取得
+        function fetchRooms() {
+            fetch("https://tohru-portfolio.secret.jp/bordgame/admin/get_rooms.php")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const roomSelect = document.getElementById("roomSelect");
+                        roomSelect.innerHTML = `<option value="">ルームを選択</option>`;
+                        data.rooms.forEach(room => {
+                            const option = document.createElement("option");
+                            option.value = room;
+                            option.textContent = room;
+                            roomSelect.appendChild(option);
+                        });
+                    } else {
+                        console.error("❌ ルームリスト取得エラー:", data.error);
+                    }
+                })
+                .catch(error => console.error("❌ ルームリスト取得エラー:", error));
+        }
+
+        fetchRooms(); // 🎯 ページ読み込み時にルームリストを取得
+
+        // 🎯 ルームが選択されたら、プレイヤー一覧を取得
+        document.getElementById("roomSelect").addEventListener("change", function () {
+            const roomID = this.value;
+            if (!roomID) return;
+            fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID}`)
+                .then(response => response.json())
+                .then(data => {
+                    const playerList = document.getElementById("playerList");
+                    playerList.innerHTML = "";
+                    if (data.success) {
+                        data.players.forEach(player => {
+                            const li = document.createElement("li");
+                            li.textContent = `ID: ${player.id} - ${player.username}`;
+                            playerList.appendChild(li);
+                        });
+                    } else {
+                        console.error("❌ session.php エラー:", data.error);
+                    }
+                })
+                .catch(error => console.error("❌ session.php 取得エラー:", error));
         });
 
-        // ゲーム開始ボタンを押す
+        // 🎯 ゲーム開始ボタン
         document.getElementById("startGame").addEventListener("click", () => {
-            socket.emit("startGame");
+            const roomID = document.getElementById("roomSelect").value;
+            if (!roomID) {
+                alert("ルームを選択してください");
+                return;
+            }
+            socket.emit("startGame", { room: roomID });
         });
 
-        // ゲーム終了ボタンを押す
+        // 🎯 ゲーム終了ボタン
         document.getElementById("endGame").addEventListener("click", () => {
-            socket.emit("endGame");
+            const roomID = document.getElementById("roomSelect").value;
+            if (!roomID) {
+                alert("ルームを選択してください");
+                return;
+            }
+            socket.emit("endGame", { room: roomID });
         });
-        
-        document.getElementById("resetuser").addEventListener("click", function() {
-            if (confirm("本当にデータベースを初期化しますか？")) {
+
+        // 🎯 ルームデータを初期化
+        document.getElementById("resetRoom").addEventListener("click", () => {
+            const roomID = document.getElementById("roomSelect").value;
+            if (!roomID) {
+                alert("ルームを選択してください");
+                return;
+            }
+            if (confirm(`本当にルーム ${roomID} のデータを初期化しますか？`)) {
                 fetch("reset.php", {
-                    method: "POST"
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: new URLSearchParams({ room: roomID })
                 })
                 .then(response => response.text())
                 .then(data => {
                     if (data.trim() === "success") {
-                        alert("データベースが初期化されました。");
+                        alert(`ルーム ${roomID} のデータが初期化されました。`);
+                        fetchRooms();  // 🎯 ルームリストを更新
                     } else {
                         alert("エラーが発生しました: " + data);
                     }
