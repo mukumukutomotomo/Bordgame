@@ -12,8 +12,8 @@ $token = isset($_POST["token"]) ? $_POST["token"] : '';
 
 if (empty($token) || $token === $serverAdminToken) {
     try {
-        // 🎯 サーバーからのリクエスト（`startGame`）では全プレイヤーを取得
-        $stmt = $pdo->query("SELECT id, username, token, x, y FROM board");
+        // 🎯 サーバー管理者モード → 全プレイヤー取得（size を追加）
+        $stmt = $pdo->query("SELECT id, username, token, x, y, playersize FROM board");
         $players = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         echo json_encode([
@@ -28,8 +28,8 @@ if (empty($token) || $token === $serverAdminToken) {
 }
 
 try {
-    // 🎯 通常のプレイヤーリクエスト（`token` に対応するプレイヤーを取得）
-    $stmt = $pdo->prepare("SELECT id, username, token, x, y FROM board WHERE token = :token");
+    // 🎯 通常のプレイヤーリクエスト（特定のトークンに対応するプレイヤーを取得）
+    $stmt = $pdo->prepare("SELECT id, username, token, x, y, playersize FROM board WHERE token = :token");
     $stmt->bindParam(":token", $token, PDO::PARAM_STR);
     $stmt->execute();
     $currentPlayer = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -39,7 +39,8 @@ try {
         exit;
     }
 
-    $stmt = $pdo->query("SELECT id, username, token, x, y FROM board");
+    // 🎯 他の全プレイヤー情報も取得（size を含める）
+    $stmt = $pdo->query("SELECT id, username, token, x, y, playersize FROM board");
     $players = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([
