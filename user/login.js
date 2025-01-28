@@ -1,45 +1,102 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const form = document.querySelector("form");
-    
-    form.addEventListener("submit", (event) => {
-        event.preventDefault();
+    console.log("📌 login.js ロード完了");
 
+    const newGameBtn = document.getElementById("newGame");
+    const joinGameBtn = document.getElementById("joinGame");
+    const roomSection = document.getElementById("roomSection");
+    const usernameSection = document.getElementById("usernameSection");
+    const playerList = document.getElementById("playerList");
+
+    // 🎯 ボタンの存在を確認（nullチェック）
+    if (!newGameBtn || !joinGameBtn) {
+        console.error("❌ 必要なボタンが見つかりません");
+        return;
+    }
+
+    let roomID = new URLSearchParams(window.location.search).get("room");
+    let token = sessionStorage.getItem("playerToken");
+
+    if (roomID) {
+        console.log(`✅ ルームID取得: ${roomID}`);
+        document.getElementById("roomID").textContent = roomID;
+        document.getElementById("inviteLink").href = window.location.href;
+        roomSection.style.display = "block";
+        usernameSection.style.display = "block";
+
+        // 🎯 ルーム内のプレイヤー一覧を取得
+        fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ token: token || "" })  // トークンがある場合は送信
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("📡 session.php のレスポンス:", data);
+            if (data.success) {
+                playerList.innerHTML = "";
+                data.players.forEach(player => {
+                    const li = document.createElement("li");
+                    li.textContent = player.username;
+                    playerList.appendChild(li);
+                });
+
+                // 🎯 自分の情報を sessionStorage に保存
+                if (data.currentPlayer) {
+                    sessionStorage.setItem("playerToken", data.currentPlayer.token);
+                }
+            } else {
+                console.error("❌ session.php のエラー:", data.error);
+            }
+        })
+        .catch(error => console.error("❌ session.php 取得エラー:", error));
+    }
+
+    // 🎯 NewGame（新しいゲームルームを作成）
+    newGameBtn.addEventListener("click", () => {
+        console.log("🎮 NewGame ボタンが押されました");
+        fetch("newgame.php", {
+            method: "POST"
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("📡 newgame.php のレスポンス:", data);
+            if (data.success) {
+                console.log(`✅ 新しいルームID: ${data.roomID}`);
+                const inviteURL = `${window.location.origin}${window.location.pathname}?room=${data.roomID}`;
+                window.location.href = inviteURL;
+            } else {
+                alert("エラー: " + data.error);
+            }
+        })
+        .catch(error => console.error("❌ newgame.php 取得エラー:", error));
+    });
+
+    // 🎯 ゲームに参加
+    joinGameBtn.addEventListener("click", () => {
         const username = document.getElementById("username").value.trim();
-        if (username === "") {
-            alert("ユーザーネームを入力してください。");
+        if (!username) {
+            alert("ユーザーネームを入力してください");
             return;
         }
 
-        fetch("login.php", {
+        console.log(`✅ ${username} がゲームに参加`);
+
+        fetch("join_game.php", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: new URLSearchParams({ username: username })
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ roomID: roomID, username: username })
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("サーバーエラー: " + response.status);
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            console.log("サーバーからのレスポンス:", data); // 🎯 ここで `data.token` の値を確認
-        
+            console.log("📡 join_game.php のレスポンス:", data);
             if (data.success) {
-                console.log("リダイレクト開始:", data.redirect);
-                console.log("✅ 保存するトークン:", data.token); // 🎯 `token` の値を確認
-        
-                if (!data.token) {
-                    console.error("❌ token がサーバーから送られていません");
-                } else {
-                    sessionStorage.setItem("playerToken", data.token);
-                }
-        
-                window.location.href = `${data.redirect}?token=${data.token}`;
+                console.log(`✅ ${username} がルーム ${roomID} に登録完了`);
+                sessionStorage.setItem("playerToken", data.token);  // 🎯 トークンを保存
+                window.location.href = data.redirect;
             } else {
                 alert(data.error);
             }
-        });        
+        })
+        .catch(error => console.error("❌ join_game.php 取得エラー:", error));
     });
 });

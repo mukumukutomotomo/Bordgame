@@ -3,15 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ユーザーログイン</title>
+    <title>ゲームルーム作成 / 参加</title>
 </head>
 <body>
-    <h1>ユーザーログイン</h1>
-    <form action="login.php" method="post">
+    <h1>ようこそ</h1>
+    <h1>WORLD ENDLESS</h1>
+
+    <!-- NewGameボタン -->
+    <button id="newGame">🎮 New Game を作成</button>
+
+    <!-- ルームID表示 -->
+    <div id="roomSection" style="display: none;">
+        <p>ルームID: <span id="roomID"></span></p>
+        <p>招待リンク: <a id="inviteLink" href="#">(生成中...)</a></p>
+    </div>
+
+    <!-- ユーザー名入力フォーム -->
+    <div id="usernameSection" style="display: none;">
         <label for="username">ユーザーネーム:</label>
-        <input type="text" id="username" name="username" required>
-        <button type="submit">登録</button>
-    </form>
+        <input type="text" id="username" required>
+        <button id="joinGame">✅ ゲームに参加</button>
+    </div>
+
+    <!-- ルーム内のプレイヤー一覧 -->
+    <h2>参加者一覧</h2>
+    <ul id="playerList"></ul>
 </body>
 <script src="login.js"></script>
 </html>
