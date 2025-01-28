@@ -198,8 +198,29 @@ socket.on("playerMoved", (data) => {
 });
 
 
+// ゲームに勝利
+const winButton = document.getElementById("winButton");
 
+winButton.addEventListener("click", () => {
+    if (!currentPlayer) {
+        console.error("❌ プレイヤーデータが取得できていません");
+        return;
+    }
 
+    console.log(`🏆 ${currentPlayer.username} が勝利を宣言！`);
+    socket.emit("playerWon", { winnerId: currentPlayer.id });
+});
+
+// 勝利メッセージ受信
+socket.on("gameOver", (data) => {
+    if (currentPlayer.id === data.winnerId) {
+        document.getElementById("winScreen").style.display = "block";
+    } else {
+        document.getElementById("loseScreen").style.display = "block";
+    }
+});
+
+// ゲーム開始
 socket.on("startGame", () => {
     console.log("🎮 ゲームが開始されました！");
 
@@ -216,10 +237,9 @@ socket.on("startGame", () => {
     drawBoard(); 
 });
 
+// ゲーム開始前に全プレイヤーのデータ取得
 socket.on("updatePlayers", (data) => {
     console.log("📡 updatePlayers 受信:", data);
-
-    // 🎯 `players` を最新のデータに更新
     players = {};
     data.forEach(player => {
         players[player.id] = player;
@@ -228,7 +248,7 @@ socket.on("updatePlayers", (data) => {
     console.log("✅ 更新後の players:", players);
 });
 
-
+// ゲーム終了
 socket.on("endGame", () => {
     document.getElementById("gameStatus").textContent = "🛑 ゲームが終了しました";
     document.getElementById("board").style.display = "none";

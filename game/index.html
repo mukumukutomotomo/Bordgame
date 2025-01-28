@@ -8,7 +8,7 @@
     <script src="https://bordgame.onrender.com/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <h1>ボードゲーム</h1>
+    <h1>World Endless</h1>
     <p id="gameStatus">ゲームが開始されていません</p>
     <div id="board" style="display: none;"></div>
     
@@ -17,6 +17,17 @@
         <button id="rollDice">🎲 サイコロを振る</button>
         <button id="moveBackward">⬇️ 2マス戻る</button>
         <button id="trapButton">⚠️ 1ターン休み</button>
+        <button id="shrinkButton">縮小</button>
+        <button id="AllCards">縮小</button>
+        <button id="winButton">🏆 勝利</button> <!-- 勝利ボタン追加 -->
+    </div>
+    
+    <!-- 勝利/敗北メッセージ -->
+    <div id="winScreen" style="display: none;">
+        <h2>🎉 勝利！おめでとうございます！ 🎉</h2>
+    </div>
+    <div id="loseScreen" style="display: none;">
+        <h2>💀 敗北…次の世界でまた会いましょう 💀</h2>
     </div>
     
     <p id="diceResult">出目: -</p>

@@ -123,6 +123,15 @@ io.on("connection", async (socket) => {
         console.log("🛑 ゲーム終了");
         io.emit("endGame");
     });
+    
+    // ゲーム勝利処理
+    io.on("connection", (socket) => {
+        socket.on("playerWon", (data) => {
+            console.log(`🏆 プレイヤー ${data.winnerId} が勝利！`);
+            io.emit("gameOver", { winnerId: data.winnerId });
+        });
+    });
+    
 
     // 🔹 プレイヤーが切断したとき
     socket.on("disconnect", () => {
