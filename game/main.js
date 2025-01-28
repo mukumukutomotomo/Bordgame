@@ -1,12 +1,13 @@
 const socket = io("https://bordgame.onrender.com");
-// Token取得関数
-function getTokenFromURL() {
+
+// 🎯 URL から `roomID` と `token` を取得する関数
+function getParamFromURL(param) {
     const params = new URLSearchParams(window.location.search);
-    return params.get("token");
+    return params.get(param);
 }
 
-// 🎯 URL から `token` を取得し、`sessionStorage` に保存
-const token = getTokenFromURL();
+const roomID = getParamFromURL("room");  // `roomID` を取得
+const token = getParamFromURL("token");  // `token` を取得
 
 if (token) {
     console.log("✅ URL から取得した token:", token);
@@ -15,21 +16,26 @@ if (token) {
     console.error("❌ トークンが見つかりません");
 }
 
+if (roomID) {
+    console.log("✅ ルームID取得:", roomID);
+} else {
+    console.error("❌ ルームIDが見つかりません");
+}
 
-let players = {};  // 全プレイヤー情報
-let playerSizes = {}; // プレイヤーのサイズ情報
-let currentPlayer = null;  // 自分のプレイヤーデータ
+// 🎯 プレイヤー情報
+let players = {};
+let playerSizes = {}; 
+let currentPlayer = null; 
 
 const board = document.getElementById("board");
 const playerToken = sessionStorage.getItem("playerToken");
 
 console.log("📌 送信する token:", playerToken);
 
-fetch("session.php", {
+// 🎯 `session.php` へルームID付きでリクエストを送る
+fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID}`, {
     method: "POST",
-    headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-    },
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ token: playerToken })
 })
 .then(response => response.json())
@@ -38,11 +44,11 @@ fetch("session.php", {
 
     if (data.success) {
         players = {};
-        playerSizes = {}; // 初期化
+        playerSizes = {}; 
 
         data.players.forEach(player => {
             players[player.id] = player;
-            playerSizes[player.id] = player.size || "normal"; // 🎯 サイズ情報をセット
+            playerSizes[player.id] = player.size || "normal"; 
         });
 
         currentPlayer = data.currentPlayer;
@@ -63,7 +69,8 @@ fetch("session.php", {
             token: playerToken,
             x: currentPlayer.x,
             y: currentPlayer.y,
-            size: currentPlayer.size // 🎯 サイズ情報も送信
+            size: currentPlayer.size, 
+            room: roomID 
         });
 
         drawBoard();
@@ -71,7 +78,6 @@ fetch("session.php", {
         console.error("❌ プレイヤーデータ取得失敗:", data.error);
     }
 });
-
 
 function drawBoard() {
     console.log("📌 drawBoard() 実行");
@@ -92,13 +98,13 @@ function drawBoard() {
                     let size = playerSizes[player.id] || "normal";
 
                     if (size === "small") {
-                        playerElement.textContent = "🧍‍♂️"; // 小人アイコン
+                        playerElement.textContent = "🧍‍♂️"; 
                         playerElement.style.transform = "scale(0.5)";
                     } else if (size === "big") {
-                        playerElement.textContent = "🦍"; // 巨大アイコン
+                        playerElement.textContent = "🦍"; 
                         playerElement.style.transform = "scale(1.5)";
                     } else {
-                        playerElement.textContent = "■"; // 通常
+                        playerElement.textContent = "■"; 
                     }
 
                     playerElement.style.color = (player.token == currentPlayer.token) ? "blue" : "red";
@@ -115,8 +121,6 @@ function drawBoard() {
     }
 }
 
-
-
 socket.on("playerMoved", (data) => {
     console.log(`📌 playerMoved 受信: id=${data.id}, x=${data.x}, y=${data.y}`);
 
@@ -129,64 +133,31 @@ socket.on("playerMoved", (data) => {
     }
 });
 
-
-// ゲームに勝利
-const winButton = document.getElementById("winButton");
-
-winButton.addEventListener("click", () => {
-    if (!currentPlayer) {
-        console.error("❌ プレイヤーデータが取得できていません");
-        return;
-    }
-
-    console.log(`🏆 ${currentPlayer.username} が勝利を宣言！`);
-    socket.emit("playerWon", { winnerId: currentPlayer.id });
-});
-
-// 勝利メッセージ受信
-socket.on("gameOver", (data) => {
-    if (currentPlayer.id === data.winnerId) {
-        document.getElementById("winScreen").style.display = "block";
-    } else {
-        document.getElementById("loseScreen").style.display = "block";
-    }
-});
-
-// ゲーム開始
+// 🎯 ゲーム開始イベント
 socket.on("startGame", () => {
     console.log("🎮 ゲームが開始されました！");
-
-    // 🎯 ゲーム開始時に盤面を表示
-    const boardElement = document.getElementById("board");
-    if (boardElement) {
-        boardElement.style.display = "grid"; // 盤面を表示
-    } else {
-        console.error("❌ `#board` が見つかりません");
-    }
-
     document.getElementById("gameStatus").textContent = "🎮 ゲームが開始されました！";
-
+    board.style.display = "grid";
     drawBoard(); 
 });
 
-// ゲーム開始前に全プレイヤーのデータ取得
+// 🎯 プレイヤーリスト更新
 socket.on("updatePlayers", (data) => {
     console.log("📡 updatePlayers 受信:", data);
     players = {};
     data.forEach(player => {
         players[player.id] = player;
     });
-
     console.log("✅ 更新後の players:", players);
 });
 
-// ゲーム終了
+// 🎯 ゲーム終了
 socket.on("endGame", () => {
     document.getElementById("gameStatus").textContent = "🛑 ゲームが終了しました";
-    document.getElementById("board").style.display = "none";
+    board.style.display = "none";
 });
 
-// 🔹 カードやイベント処理
+// 🎯 カードやイベント処理
 const diceButton = document.getElementById("rollDice");
 const moveForwardButton = document.getElementById("moveForward");
 const moveBackwardButton = document.getElementById("moveBackward");
