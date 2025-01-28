@@ -17,10 +17,14 @@ if (token) {
 
 
 let players = {};  // 全プレイヤー情報
+let playerSizes = {}; // プレイヤーのサイズ情報
 let currentPlayer = null;  // 自分のプレイヤーデータ
+
 const board = document.getElementById("board");
 const playerToken = sessionStorage.getItem("playerToken");
+
 console.log("📌 送信する token:", playerToken);
+
 fetch("session.php", {
     method: "POST",
     headers: {
@@ -34,9 +38,13 @@ fetch("session.php", {
 
     if (data.success) {
         players = {};
+        playerSizes = {}; // 初期化
+
         data.players.forEach(player => {
             players[player.id] = player;
-        });        
+            playerSizes[player.id] = player.size || "normal"; // 🎯 サイズ情報をセット
+        });
+
         currentPlayer = data.currentPlayer;
 
         if (!currentPlayer) {
@@ -45,6 +53,8 @@ fetch("session.php", {
         }
 
         console.log("✅ 自分のプレイヤーデータ:", currentPlayer);
+        console.log("✅ 現在の全プレイヤーデータ:", players);
+        console.log("✅ プレイヤーサイズデータ:", playerSizes);
 
         // 🎯 プレイヤー登録をサーバーに送信
         socket.emit("registerPlayer", {
@@ -52,7 +62,8 @@ fetch("session.php", {
             username: currentPlayer.username,
             token: playerToken,
             x: currentPlayer.x,
-            y: currentPlayer.y
+            y: currentPlayer.y,
+            size: currentPlayer.size // 🎯 サイズ情報も送信
         });
 
         drawBoard();
@@ -60,8 +71,6 @@ fetch("session.php", {
         console.error("❌ プレイヤーデータ取得失敗:", data.error);
     }
 });
-
-
 
 
 function drawBoard() {
@@ -79,108 +88,31 @@ function drawBoard() {
                     playerInCell = true;
                     const playerElement = document.createElement("div");
                     playerElement.classList.add("player");
-                    playerElement.textContent = "■";
+
+                    let size = playerSizes[player.id] || "normal";
+
+                    if (size === "small") {
+                        playerElement.textContent = "🧍‍♂️"; // 小人アイコン
+                        playerElement.style.transform = "scale(0.5)";
+                    } else if (size === "big") {
+                        playerElement.textContent = "🦍"; // 巨大アイコン
+                        playerElement.style.transform = "scale(1.5)";
+                    } else {
+                        playerElement.textContent = "■"; // 通常
+                    }
+
                     playerElement.style.color = (player.token == currentPlayer.token) ? "blue" : "red";
                     cell.appendChild(playerElement);
                 }
             });
 
             if (!playerInCell) {
-                cell.style.backgroundColor = "#ddd"; // 空のセルを明るい色にする
+                cell.style.backgroundColor = "#ddd";
             }
 
             board.appendChild(cell);
         }
     }
-}
-function movePlayer(steps) {
-    if (!playerToken) {
-        console.error("❌ プレイヤートークンが見つかりません");
-        return;
-    }
-
-    // 🎯 まず session.php から最新のプレイヤーデータを取得
-    fetch("session.php", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: new URLSearchParams({ token: playerToken })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (!data.success) {
-            console.error("❌ session.php から最新データの取得に失敗:", data.error);
-            return;
-        }
-
-        // 🎯 最新の x, y を取得
-        let newX = data.currentPlayer.x;
-        let newY = data.currentPlayer.y;
-
-        console.log(`📌 最新の座標取得: x=${newX}, y=${newY}`);
-
-        // 🎲 サイコロの出目を加算
-        for (let i = 0; i < Math.abs(steps); i++) {
-            if (steps > 0) {
-                if (newY % 2 === 0) {  // 偶数行なら右へ
-                    if (newX < 9) {
-                        newX++;
-                    } else if (newY < 9) {  // 端に達したら次の行へ
-                        newY++;
-                    }
-                } else {  // 奇数行なら左へ
-                    if (newX > 0) {
-                        newX--;
-                    } else if (newY < 9) {  // 端に達したら次の行へ
-                        newY++;
-                    }
-                }
-            } else {  // 後退する場合
-                if (newY % 2 === 0) {
-                    if (newX > 0) {
-                        newX--;
-                    } else if (newY > 0) {
-                        newY--;
-                    }
-                } else {
-                    if (newX < 9) {
-                        newX++;
-                    } else if (newY > 0) {
-                        newY--;
-                    }
-                }
-            }
-        }
-
-        console.log(`📌 新しい座標: x=${newX}, y=${newY}`);
-
-        // 🎯 WebSocket でサーバーに移動を通知
-        socket.emit("movePlayer", { id: data.currentPlayer.id, x: newX, y: newY });
-
-        // 🎯 データベースに移動後の座標を保存
-        fetch("update_position.php", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: new URLSearchParams({
-                token: playerToken,
-                x: newX,
-                y: newY
-            })
-        })
-        .then(response => response.json())
-        .then(saveData => {
-            if (!saveData.success) {
-                console.error("❌ データベース更新失敗:", saveData.error);
-            } else {
-                console.log("✅ データベースにプレイヤー座標を保存:", saveData);
-                // 🎯 盤面を更新
-                drawBoard();
-            }
-        });
-    });
 }
 
 
@@ -279,8 +211,8 @@ moveBackwardButton.addEventListener("click", () => {
     movePlayer(-2);
 });
 
-// 🔹 罠（1ターン休み）
-trapButton.addEventListener("click", () => {
-    statusText.textContent = "状態: 1ターン休み中";
-    alert("罠にかかった！次のターンは休み");
-});
+// // 🔹 罠（1ターン休み）
+// trapButton.addEventListener("click", () => {
+//     statusText.textContent = "状態: 1ターン休み中";
+//     alert("罠にかかった！次のターンは休み");
+// });
