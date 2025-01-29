@@ -3,12 +3,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const newGameBtn = document.getElementById("newGame");
     const joinGameBtn = document.getElementById("joinGame");
+    const copyLinkBtn = document.getElementById("copyLink");
     const roomSection = document.getElementById("roomSection");
     const usernameSection = document.getElementById("usernameSection");
     const playerList = document.getElementById("playerList");
 
     // 🎯 ボタンの存在を確認（nullチェック）
-    if (!newGameBtn || !joinGameBtn) {
+    if (!newGameBtn || !joinGameBtn || !copyLinkBtn) {
         console.error("❌ 必要なボタンが見つかりません");
         return;
     }
@@ -19,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (roomID) {
         console.log(`✅ ルームID取得: ${roomID}`);
         document.getElementById("roomID").textContent = roomID;
-        document.getElementById("inviteLink").href = window.location.href;
+        document.getElementById("inviteLink").href = `https://tohru-portfolio.secret.jp/bordgame/user/login.html?room=${roomID}`;
         roomSection.style.display = "block";
         usernameSection.style.display = "block";
 
@@ -62,10 +63,21 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("📡 newgame.php のレスポンス:", data);
             if (data.success) {
                 console.log(`✅ 新しいルームID: ${data.roomID}`);
-                const inviteURL = `${window.location.origin}${window.location.pathname}?room=${data.roomID}`;
-                window.location.href = inviteURL;
+                const inviteURL = `https://tohru-portfolio.secret.jp/bordgame/user/login.html?room=${data.roomID}`;
+                navigator.clipboard.writeText(inviteURL).then(() => {
+                    console.log("招待リンクがクリップボードにコピーされました: " + inviteURL);
+                }).catch(err => {
+                    console.error("❌ クリップボードへのコピーに失敗しました:", err);
+                });
+
+                // 🎯 ルームIDとセクションを表示
+                roomID = data.roomID;
+                document.getElementById("roomID").textContent = roomID;
+                document.getElementById("inviteLink").href = inviteURL;
+                roomSection.style.display = "block";
+                usernameSection.style.display = "block";
             } else {
-                alert("エラー: " + data.error);
+                console.error("エラー: " + data.error);
             }
         })
         .catch(error => console.error("❌ newgame.php 取得エラー:", error));
@@ -98,5 +110,19 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         })
         .catch(error => console.error("❌ join_game.php 取得エラー:", error));
+    });
+
+    // 🎯 招待リンクをコピー
+    copyLinkBtn.addEventListener("click", () => {
+        if (roomID) {
+            const inviteURL = `https://tohru-portfolio.secret.jp/bordgame/user/login.html?room=${roomID}`;
+            navigator.clipboard.writeText(inviteURL).then(() => {
+                alert("招待リンクがクリップボードにコピーされました: " + inviteURL);
+            }).catch(err => {
+                console.error("❌ クリップボードへのコピーに失敗しました:", err);
+            });
+        } else {
+            alert("ルームIDがありません");
+        }
     });
 });
