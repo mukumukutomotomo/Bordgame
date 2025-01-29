@@ -65,12 +65,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.log(`✅ 新しいルームID: ${data.roomID}`);
                 const inviteURL = `https://tohru-portfolio.secret.jp/bordgame/user/login.html?room=${data.roomID}`;
                 navigator.clipboard.writeText(inviteURL).then(() => {
-                    alert("招待リンクがクリップボードにコピーされました: " + inviteURL);
+                    console.log("招待リンクがクリップボードにコピーされました: " + inviteURL);
                 }).catch(err => {
                     console.error("❌ クリップボードへのコピーに失敗しました:", err);
                 });
+
+                // 🎯 ルームIDとセクションを表示
+                roomID = data.roomID;
+                document.getElementById("roomID").textContent = roomID;
+                document.getElementById("inviteLink").href = inviteURL;
+                roomSection.style.display = "block";
+                usernameSection.style.display = "block";
             } else {
-                alert("エラー: " + data.error);
+                console.error("エラー: " + data.error);
             }
         })
         .catch(error => console.error("❌ newgame.php 取得エラー:", error));
