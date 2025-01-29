@@ -91,14 +91,13 @@ function drawBoard() {
 
                     let size = playerSizes[player.id] || "normal";
 
+                    playerElement.textContent = "■"; // 通常の四角
                     if (size === "small") {
-                        playerElement.textContent = "🧍‍♂️"; // 小人アイコン
                         playerElement.style.transform = "scale(0.5)";
                     } else if (size === "big") {
-                        playerElement.textContent = "🦍"; // 巨大アイコン
                         playerElement.style.transform = "scale(1.5)";
                     } else {
-                        playerElement.textContent = "■"; // 通常
+                        playerElement.style.transform = "scale(1)";
                     }
 
                     playerElement.style.color = (player.token == currentPlayer.token) ? "blue" : "red";
