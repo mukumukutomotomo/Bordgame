@@ -55,22 +55,29 @@ io.on("connection", async (socket) => {
     });
 
     socket.on("startGame", async (data) => {
-        console.log("📡 startGame イベント受信:", data); // 確認用
+        console.log("📡 startGame イベント受信:", data); // 受信データを確認
     
         if (!data.room) {
             console.error("❌ ルームIDが指定されていません");
             return;
-        }    
+        }
+    
         console.log(`🎮 ルーム ${data.room} でゲーム開始`);
     
         try {
             // 🎯 `session.php` に `roomID` を含めてリクエスト
-            const response = await axios.post(LOLLIPOP_API, new URLSearchParams({
+            const requestData = new URLSearchParams({
                 token: "SERVER_ADMIN_TOKEN",
-                room: data.room  // ここを追加！
-            }).toString(), {
+                room: data.room
+            }).toString();
+    
+            console.log(`📡 session.php へ送信するデータ: ${requestData}`);
+    
+            const response = await axios.post(LOLLIPOP_API, requestData, {
                 headers: { "Content-Type": "application/x-www-form-urlencoded" }
             });
+    
+            console.log("📡 session.php のレスポンス:", response.data);
     
             if (response.data.success) {
                 rooms[data.room] = response.data.players.reduce((acc, player) => {
