@@ -72,6 +72,7 @@
         // 🎯 ゲーム開始ボタン
         document.getElementById("startGame").addEventListener("click", () => {
             const roomID = document.getElementById("roomSelect").value;
+            console.log(`🎮 送信するルームID: ${roomID}`); // 確認用
             if (!roomID) {
                 alert("ルームを選択してください");
                 return;

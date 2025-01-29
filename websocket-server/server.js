@@ -55,11 +55,12 @@ io.on("connection", async (socket) => {
     });
 
     socket.on("startGame", async (data) => {
+        console.log("📡 startGame イベント受信:", data); // 確認用
+    
         if (!data.room) {
             console.error("❌ ルームIDが指定されていません");
             return;
-        }
-    
+        }    
         console.log(`🎮 ルーム ${data.room} でゲーム開始`);
     
         try {
