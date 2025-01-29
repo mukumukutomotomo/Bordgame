@@ -1,11 +1,17 @@
+if (!roomID) {
+    console.error("❌ ルームIDが見つかりません");
+}
+
 function movePlayer(steps) {
-    if (!playerToken) {
-        console.error("❌ プレイヤートークンが見つかりません");
+    if (!playerToken || !roomID) {
+        console.error("❌ プレイヤートークンまたはルームIDが見つかりません");
         return;
     }
 
-    // 🎯 まず session.php から最新のプレイヤーデータを取得
-    fetch("session.php", {
+    console.log(`📌 movePlayer() 実行: steps=${steps}, roomID=${roomID}`);
+
+    // 🎯 `session.php` から最新のプレイヤーデータを取得
+    fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID}`, {
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
@@ -19,7 +25,6 @@ function movePlayer(steps) {
             return;
         }
 
-        // 🎯 最新の x, y を取得
         let newX = data.currentPlayer.x;
         let newY = data.currentPlayer.y;
 
@@ -31,13 +36,13 @@ function movePlayer(steps) {
                 if (newY % 2 === 0) {  // 偶数行なら右へ
                     if (newX < 9) {
                         newX++;
-                    } else if (newY < 9) {  // 端に達したら次の行へ
+                    } else if (newY < 9) {  
                         newY++;
                     }
                 } else {  // 奇数行なら左へ
                     if (newX > 0) {
                         newX--;
-                    } else if (newY < 9) {  // 端に達したら次の行へ
+                    } else if (newY < 9) {  
                         newY++;
                     }
                 }
@@ -61,10 +66,15 @@ function movePlayer(steps) {
         console.log(`📌 新しい座標: x=${newX}, y=${newY}`);
 
         // 🎯 WebSocket でサーバーに移動を通知
-        socket.emit("movePlayer", { id: data.currentPlayer.id, x: newX, y: newY });
+        socket.emit("movePlayer", {
+            id: data.currentPlayer.id,
+            x: newX,
+            y: newY,
+            room: roomID
+        });
 
         // 🎯 データベースに移動後の座標を保存
-        fetch("update_position.php", {
+        fetch(`https://tohru-portfolio.secret.jp/bordgame/game/update_position.php`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded"
@@ -72,7 +82,8 @@ function movePlayer(steps) {
             body: new URLSearchParams({
                 token: playerToken,
                 x: newX,
-                y: newY
+                y: newY,
+                room: roomID
             })
         })
         .then(response => response.json())
@@ -81,9 +92,10 @@ function movePlayer(steps) {
                 console.error("❌ データベース更新失敗:", saveData.error);
             } else {
                 console.log("✅ データベースにプレイヤー座標を保存:", saveData);
-                // 🎯 盤面を更新
                 drawBoard();
             }
-        });
-    });
+        })
+        .catch(error => console.error("❌ update_position.php 取得エラー:", error));
+    })
+    .catch(error => console.error("❌ session.php 取得エラー:", error));
 }

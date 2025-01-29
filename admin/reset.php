@@ -1,27 +1,21 @@
 <?php
-// データベース接続情報
-$servername = 'mysql312.phy.lolipop.lan';  // データベースのホスト名
-$username = 'LAA1538186'; // データベースのユーザー名
-$password = 'altair';
-$dbname = 'LAA1538186-login';
+header("Content-Type: application/json");
+include('db.php');
 
-// MySQLに接続
-$conn = new mysqli($servername, $username, $password, $dbname);
+$roomID = $_POST["room"] ?? '';
 
-// 接続チェック
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+if (empty($roomID)) {
+    echo json_encode(["success" => false, "error" => "ルームIDが指定されていません"]);
+    exit;
 }
 
-// SQLコマンド実行（データを全削除 & IDリセット）
-$sql = "TRUNCATE TABLE board";
+try {
+    // 🎯 ルームのテーブルを削除
+    $stmt = $pdo->prepare("DROP TABLE IF EXISTS `$roomID`");
+    $stmt->execute();
 
-if ($conn->query($sql) === TRUE) {
-    echo "success";
-} else {
-    echo "error: " . $conn->error;
+    echo json_encode(["success" => true, "message" => "ルーム $roomID のデータが削除されました"]);
+} catch (PDOException $e) {
+    echo json_encode(["success" => false, "error" => "データベースエラー: " . $e->getMessage()]);
 }
-
-// 接続を閉じる
-$conn->close();
 ?>
