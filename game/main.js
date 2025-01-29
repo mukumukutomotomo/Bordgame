@@ -93,15 +93,16 @@ function drawBoard() {
             cell.classList.add("cell");
 
             let playerInCell = false;
-            Object.values(players).forEach(player => {
+            Object.values(players).forEach(player => {                
                 if (player.x == x && player.y == y) {
                     playerInCell = true;
+
                     const playerElement = document.createElement("div");
                     playerElement.classList.add("player");
 
                     let size = playerSizes[player.id] || "normal";
+                    playerElement.textContent = "■";
 
-                    playerElement.textContent = "■"; // 通常の四角
                     if (size === "small") {
                         playerElement.style.transform = "scale(0.5)";
                     } else if (size === "big") {
@@ -122,7 +123,26 @@ function drawBoard() {
             board.appendChild(cell);
         }
     }
+
+    console.log("✅ drawBoard() 完了！");
 }
+function updatePlayerData(callback) {
+    fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID}`)
+    .then(response => response.json())
+    .then(data => {
+        console.log("📌 最新のプレイヤーデータ取得:", data);
+
+        if (data.success && data.players) {
+            players = data.players;  // ← 最新データに更新
+            console.log("✅ players 更新完了:", players);
+            if (callback) callback(); // `drawBoard()` を呼び出す
+        } else {
+            console.error("❌ session.php からのデータ取得に失敗:", data.error);
+        }
+    })
+    .catch(error => console.error("❌ session.php 取得エラー:", error));
+}
+
 
 socket.on("playerMoved", (data) => {
     console.log(`📌 playerMoved 受信: id=${data.id}, x=${data.x}, y=${data.y}`);
