@@ -10,13 +10,27 @@ const io = socketIo(server, { cors: { origin: "*" } });
 
 app.use(cors()); // CORS 設定
 
-// 🎯 `session.php` のURL
 const LOLLIPOP_API = "https://tohru-portfolio.secret.jp/bordgame/game/session.php";
 let rooms = {}; // ルームごとのプレイヤーデータ { roomID: { playerID: {...} } }
 
 // 🔹 WebSocket接続時の処理
 io.on("connection", async (socket) => {
     console.log(`✅ 新しいプレイヤーが接続: ${socket.id}`);
+
+    // 🎯 クライアントをルームに参加させる
+    socket.on("joinRoom", (roomID) => {
+        console.log(`🔗 クライアント ${socket.id} がルーム ${roomID} に参加`);
+        socket.join(roomID);
+
+        // ルームのプレイヤーデータを初期化
+        if (!rooms[roomID]) {
+            rooms[roomID] = {};
+        }
+
+        rooms[roomID][socket.id] = { id: socket.id, username: `Player${socket.id}`, x: 0, y: 0 };
+
+        console.log(`📡 現在の rooms:`, io.sockets.adapter.rooms);
+    });
 
     // 🎯 プレイヤー登録
     socket.on("registerPlayer", (data) => {
@@ -26,7 +40,7 @@ io.on("connection", async (socket) => {
         }
 
         if (!rooms[data.room]) {
-            rooms[data.room] = {}; // ルームごとにプレイヤーを管理
+            rooms[data.room] = {};
         }
 
         rooms[data.room][data.id] = {
@@ -49,11 +63,31 @@ io.on("connection", async (socket) => {
             return;
         }
 
-        rooms[data.room][data.id].x = data.x;
-        rooms[data.room][data.id].y = data.y;
+        // 🎲 移動ロジックを適用
+        let player = rooms[data.room][data.id];
+        player.x = data.x;
+        player.y = data.y;
 
         console.log(`🔄 ルーム ${data.room} でプレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
+
+        // 🎯 WebSocket で移動を通知
         io.to(data.room).emit("playerMoved", { id: data.id, x: data.x, y: data.y });
+
+        // 🎯 データベースに移動後の座標を保存
+        axios.post("https://tohru-portfolio.secret.jp/bordgame/game/update_position.php", new URLSearchParams({
+            token: player.token,
+            x: data.x,
+            y: data.y,
+            room: data.room
+        }).toString(), {
+            headers: { "Content-Type": "application/x-www-form-urlencoded" }
+        }).then(response => {
+            if (!response.data.success) {
+                console.error("❌ データベース更新失敗:", response.data.error);
+            } else {
+                console.log("✅ データベースにプレイヤー座標を保存:", response.data);
+            }
+        }).catch(error => console.error("❌ update_position.php 取得エラー:", error));
     });
 
     // 🎯 ゲーム開始処理
@@ -84,6 +118,7 @@ io.on("connection", async (socket) => {
                 console.log(`Sending updatePlayers to room: ${data.room}`);
                 io.to(data.room).emit("updatePlayers", Object.values(rooms[data.room]));
                 console.log(`Sending startGame to room: ${data.room}`);
+                console.log(`📡 現在のルーム情報:`, io.sockets.adapter.rooms);
                 io.to(data.room).emit("startGame");
             } else {
                 console.error(`❌ ルーム ${data.room} のプレイヤーデータ取得失敗:`, response.data.error);
@@ -104,31 +139,18 @@ io.on("connection", async (socket) => {
         io.to(data.room).emit("endGame");
     });
 
-    // 🎯 プレイヤー勝利処理
-    socket.on("playerWon", (data) => {
-        if (!data.room) {
-            console.error("❌ ルームIDが指定されていません");
-            return;
-        }
-
-        console.log(`🏆 ルーム ${data.room} でプレイヤー ${data.winnerId} が勝利！`);
-        io.to(data.room).emit("gameOver", { winnerId: data.winnerId });
-    });
-
-    // 🎯 プレイヤー切断処理
+    // 🎯 クライアント切断処理
     socket.on("disconnect", () => {
         console.log(`❌ プレイヤーが切断: ${socket.id}`);
 
         Object.keys(rooms).forEach((roomID) => {
-            for (let id in rooms[roomID]) {
-                if (rooms[roomID][id].socketId === socket.id) {
-                    console.log(`🗑️ ルーム ${roomID} からプレイヤー ${id} を削除`);
-                    delete rooms[roomID][id];
-                    break;
-                }
+            if (rooms[roomID] && rooms[roomID][socket.id]) {
+                console.log(`🗑️ ルーム ${roomID} からプレイヤー ${socket.id} を削除`);
+                delete rooms[roomID][socket.id];
             }
-            io.to(roomID).emit("updatePlayers", Object.values(rooms[roomID]));
         });
+
+        io.emit("updatePlayers", rooms);
     });
 });
 

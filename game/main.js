@@ -1,11 +1,8 @@
 const socket = io("https://bordgame.onrender.com");
-
-// 🎯 URL から `roomID` と `token` を取得する関数
 function getParamFromURL(param) {
     const params = new URLSearchParams(window.location.search);
     return params.get(param);
 }
-
 const roomID = getParamFromURL("room");  // `roomID` を取得
 const token = getParamFromURL("token");  // `token` を取得
 
@@ -15,12 +12,19 @@ if (token) {
 } else {
     console.error("❌ トークンが見つかりません");
 }
-
 if (roomID) {
     console.log("✅ ルームID取得:", roomID);
 } else {
     console.error("❌ ルームIDが見つかりません");
 }
+socket.on("connect", () => {
+    console.log("✅ WebSocket 接続成功");
+    if (roomID) {
+        console.log(`🔗 WebSocket 経由でルーム ${roomID} に参加`);
+        socket.emit("joinRoom", roomID);
+    }
+});
+
 
 // 🎯 プレイヤー情報
 let players = {};
