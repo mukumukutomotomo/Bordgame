@@ -81,7 +81,9 @@ io.on("connection", async (socket) => {
                 }, {});
 
                 console.log(`✅ ルーム ${data.room} の最新プレイヤーリスト更新`);
+                console.log(`Sending updatePlayers to room: ${data.room}`);
                 io.to(data.room).emit("updatePlayers", Object.values(rooms[data.room]));
+                console.log(`Sending startGame to room: ${data.room}`);
                 io.to(data.room).emit("startGame");
             } else {
                 console.error(`❌ ルーム ${data.room} のプレイヤーデータ取得失敗:`, response.data.error);

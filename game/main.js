@@ -132,14 +132,6 @@ socket.on("playerMoved", (data) => {
     }
 });
 
-// 🎯 ゲーム開始イベント
-socket.on("startGame", () => {
-    console.log("🎮 ゲームが開始されました！");
-    document.getElementById("gameStatus").textContent = "🎮 ゲームが開始されました！";
-    board.style.display = "grid";
-    drawBoard(); 
-});
-
 // 🎯 プレイヤーリスト更新
 socket.on("updatePlayers", (data) => {
     console.log("📡 updatePlayers 受信:", data);
@@ -149,6 +141,15 @@ socket.on("updatePlayers", (data) => {
     });
     console.log("✅ 更新後の players:", players);
 });
+
+// 🎯 ゲーム開始イベント
+socket.on("startGame", () => {
+    console.log("🎮 ゲームが開始されました！");
+    document.getElementById("gameStatus").textContent = "🎮 ゲームが開始されました！";
+    board.style.display = "grid";
+    drawBoard(); 
+});
+
 
 // 🎯 ゲーム終了
 socket.on("endGame", () => {
