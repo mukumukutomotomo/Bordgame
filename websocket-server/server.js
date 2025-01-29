@@ -12,7 +12,6 @@ app.use(cors()); // CORS 設定
 
 // 🎯 `session.php` のURL
 const LOLLIPOP_API = "https://tohru-portfolio.secret.jp/bordgame/game/session.php";
-
 let rooms = {}; // ルームごとのプレイヤーデータ { roomID: { playerID: {...} } }
 
 // 🔹 WebSocket接続時の処理
@@ -71,12 +70,7 @@ io.on("connection", async (socket) => {
         try {
             console.log(`📡 session.php へ送信するデータ: { token: "SERVER_ADMIN_TOKEN", room: "${data.room}" }`);
 
-            const response = await axios.post(LOLLIPOP_API, {
-                token: "SERVER_ADMIN_TOKEN",
-                room: data.room
-            }, {
-                headers: { "Content-Type": "application/json" } // JSON に変更
-            });
+            const response = await axios.get(`${LOLLIPOP_API}?room=${data.room}&token=SERVER_ADMIN_TOKEN`);
 
             console.log("📡 session.php のレスポンス:", response.data);
 
