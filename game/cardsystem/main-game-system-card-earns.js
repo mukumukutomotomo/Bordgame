@@ -1,3 +1,9 @@
+// const roomID = window.roomID; 
+// const playerToken = window.playerToken;
+window.onload = function() {
+    console.log("📡 `main-game-system-card-earns.js` で取得した roomID:", roomID);
+};
+
 const initialCardTiles = [
     { x: 3, y: 4 }, 
     { x: 7, y: 2 },
@@ -14,30 +20,32 @@ const cardPool = [
     { id: "Card_ID_007", name: "王冠泥棒", points: 15 },
     { id: "Card_ID_008", name: "パンドラ", points: 20 }
 ];
-
 function isOnInitialCardTile(x, y) {
     return initialCardTiles.some(tile => tile.x === x && tile.y === y);
 }
-
-// 🎯 プレイヤーが特定のマスに着いたらランダムにカードを獲得
 function handleCardPickup(playerToken, roomID, x, y) {
-    console.log("📡 取得した roomID:", roomID);  // 🔥 roomID をログに出力
-    if (!roomID || roomID === "undefined") {
-        console.error("❌ `roomID` が undefined です！処理を中断");
-        alert("❌ ルーム情報が取得できませんでした。ゲームを再起動してください。");
+    roomID = roomID || window.roomID;
+    playerToken = playerToken || window.playerToken;
+    console.log("📡 `handleCardPickup` で取得した roomID:", roomID);
+    console.log("📡 `handleCardPickup` で取得した playerToken:", playerToken);
+
+    if (!roomID || roomID === "undefined" || !playerToken || playerToken === "undefined") {
+        console.error("❌ `roomID` または `playerToken` が undefined です！処理を中断");
+        alert("❌ ルーム情報またはプレイヤー情報が取得できませんでした。ゲームを再起動してください。");
         return;
     }
 
     if (isOnInitialCardTile(x, y)) {
         let randomCard = cardPool[Math.floor(Math.random() * cardPool.length)];
         console.log(`🎴 プレイヤーが ${randomCard.name} を獲得！（送信前）`);
+        console.log(`📡 送信するデータ - roomID: ${roomID}, playerToken: ${playerToken}, cardID: ${randomCard.id}`);
 
         fetch("/bordgame/game/cardsystem/save_card.php", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: new URLSearchParams({
                 playerToken: playerToken,
-                roomID: roomID,  // 🔥 `roomID` を送信
+                roomID: roomID,  // 🔥 修正後の `roomID`
                 cardID: randomCard.id
             })
         })
@@ -68,7 +76,7 @@ function handleCardPickup(playerToken, roomID, x, y) {
 
         socket.emit("receiveCard", {
             playerToken: playerToken,
-            room: roomID,
+            room: roomID,  // 🔥 修正後の `roomID`
             card: randomCard.id,
             cardName: randomCard.name,
             points: randomCard.points
@@ -77,10 +85,8 @@ function handleCardPickup(playerToken, roomID, x, y) {
 }
 
 
-
 // 🎯 プレイヤー移動を監視し、カード取得処理を実行
 socket.on("playerMoved", (data) => {
     console.log(`📡 プレイヤー移動検知: ID=${data.id}, x=${data.x}, y=${data.y}`);
-
     handleCardPickup(data.token, data.room, data.x, data.y);
 });

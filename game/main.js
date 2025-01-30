@@ -5,6 +5,8 @@ function getParamFromURL(param) {
 }
 const roomID = getParamFromURL("room");  // `roomID` を取得
 const token = getParamFromURL("token");  // `token` を取得
+window.roomID = roomID; 
+window.playerToken = token;
 
 if (token) {
     console.log("✅ URL から取得した token:", token);
