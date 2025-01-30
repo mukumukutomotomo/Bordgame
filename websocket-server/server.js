@@ -3,13 +3,10 @@ const http = require("http");
 const socketIo = require("socket.io");
 const axios = require("axios");
 const cors = require("cors");
-
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, { cors: { origin: "*" } });
-
 app.use(cors()); // CORS 設定
-
 const LOLLIPOP_API = "https://tohru-portfolio.secret.jp/bordgame/game/session.php";
 let rooms = {}; // ルームごとのプレイヤーデータ { roomID: { playerID: {...} } }
 
@@ -62,18 +59,14 @@ io.on("connection", async (socket) => {
             console.error("❌ movePlayer に無効なデータ:", data);
             return;
         }
-    
-        // 🎲 移動ロジックを適用
         let player = rooms[data.room][data.id];
         player.x = data.x;
         player.y = data.y;
-    
         console.log(`🔄 ルーム ${data.room} でプレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
     
-        // 🎯 WebSocket で移動を通知 (全プレイヤーへ)
+        // 🎯 移動を通知 (全プレイヤーへ)
         io.to(data.room).emit("playerMoved", { id: data.id, x: data.x, y: data.y });
-    
-        // 🎯 データベースに移動後の座標を保存 (`token` を追加)
+        // 🎯 データベースに移動後の座標を保存
         axios.post("https://tohru-portfolio.secret.jp/bordgame/game/update_position.php", new URLSearchParams({
             token: data.token,  // 🔥 `token` を `update_position.php` に送る
             x: data.x,
@@ -129,6 +122,24 @@ io.on("connection", async (socket) => {
         }
     });
 
+    // 🎯 勝者決定処理
+    socket.on("declareWinner", (data) => {
+        if (!data.room || !data.winnerId || !rooms[data.room]) {
+            console.error("❌ 無効な勝利通知:", data);
+            return;
+        }
+
+        console.log(`🏆 ルーム ${data.room} でプレイヤー ${data.winnerId} が勝利`);
+
+        // ルーム内の全プレイヤーにゲーム終了を通知
+        io.to(data.room).emit("gameOver", {
+            winnerId: data.winnerId
+        });
+
+        // ルームのプレイヤー移動を禁止する
+        delete rooms[data.room];
+    });
+
     // 🎯 ゲーム終了処理
     socket.on("endGame", (data) => {
         if (!data.room) {
@@ -139,6 +150,7 @@ io.on("connection", async (socket) => {
         console.log(`🛑 ルーム ${data.room} のゲーム終了`);
         io.to(data.room).emit("endGame");
     });
+    
 
     // 🎯 クライアント切断処理
     socket.on("disconnect", () => {
