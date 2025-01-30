@@ -133,9 +133,11 @@ function updatePlayerData(callback) {
         console.log("📌 最新のプレイヤーデータ取得:", data);
 
         if (data.success && data.players) {
-            players = data.players;  // ← 最新データに更新
+            players = data.players; 
             console.log("✅ players 更新完了:", players);
-            if (callback) callback(); // `drawBoard()` を呼び出す
+            setTimeout(() => {
+                if (callback) callback();
+            }, 50);
         } else {
             console.error("❌ session.php からのデータ取得に失敗:", data.error);
         }
@@ -144,17 +146,15 @@ function updatePlayerData(callback) {
 }
 
 
-socket.on("playerMoved", (data) => {
-    console.log(`📌 playerMoved 受信: id=${data.id}, x=${data.x}, y=${data.y}`);
 
-    if (players[data.id]) {
-        players[data.id].x = data.x;
-        players[data.id].y = data.y;
+socket.on("playerMoved", (data) => {
+    console.log(`📡 WebSocket 受信: playerMoved -> id=${data.id}, x=${data.x}, y=${data.y}`);
+    updatePlayerData(() => {
+        console.log(`📌 playerMoved: ID=${data.id} の更新後に drawBoard() を実行`);
         drawBoard();
-    } else {
-        console.error(`❌ players に ID=${data.id} のプレイヤーが存在しません`);
-    }
+    });
 });
+
 
 // 🎯 プレイヤーリスト更新
 socket.on("updatePlayers", (data) => {
