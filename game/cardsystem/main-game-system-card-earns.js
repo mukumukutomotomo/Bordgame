@@ -1,42 +1,73 @@
-const specialTiles = [
+const initialCardTiles = [
     { x: 3, y: 4 }, 
     { x: 7, y: 2 },
     { x: 5, y: 8 }
 ];
 
 const cardPool = [
-    { id: "Card_ID_001", name: "攻撃カード 🗡️", points: 10 },
-    { id: "Card_ID_002", name: "防御カード 🛡️", points: 8 },
-    { id: "Card_ID_003", name: "回復カード ❤️", points: 5 },
-    { id: "Card_ID_004", name: "瞬間移動カード ✨", points: 12 },
-    { id: "Card_ID_005", name: "サイコロ追加 🎲+1", points: 7 },
-    { id: "Card_ID_006", name: "罠カード ⚠️", points: 6 },
-    { id: "Card_ID_007", name: "特殊カード 🔥", points: 15 },
-    { id: "Card_ID_008", name: "レジェンドカード 🏆", points: 20 }
+    { id: "Card_ID_001", name: "冥府の招待状", points: 10 },
+    { id: "Card_ID_002", name: "運命の逆転劇", points: 8 },
+    { id: "Card_ID_003", name: "影の召喚儀", points: 5 },
+    { id: "Card_ID_004", name: "虚空の加護", points: 12 },
+    { id: "Card_ID_005", name: "盤面の亡霊", points: 7 },
+    { id: "Card_ID_006", name: "魔王の加護", points: 6 },
+    { id: "Card_ID_007", name: "王冠泥棒", points: 15 },
+    { id: "Card_ID_008", name: "パンドラ", points: 20 }
 ];
 
-// 🎯 プレイヤーがカード取得マスに止まった時の処理
-function checkForCard(x, y, playerID) {
-    let isSpecialTile = specialTiles.some(tile => tile.x === x && tile.y === y);
-    if (isSpecialTile) {
-        let randomCard = cardPool[Math.floor(Math.random() * cardPool.length)];
-        console.log(`🎴 カード獲得: ${randomCard.name} (ポイント: ${randomCard.points})`);
+function isOnInitialCardTile(x, y) {
+    return initialCardTiles.some(tile => tile.x === x && tile.y === y);
+}
 
-        // 🎯 サーバーにカード取得を通知 & データベースに保存
-        fetch("save_card.php", {
+// 🎯 プレイヤーが特定のマスに着いたらランダムにカードを獲得
+function handleCardPickup(playerToken, roomID, x, y) {
+    console.log("📡 取得した roomID:", roomID);  // 🔥 roomID をログに出力
+    if (!roomID || roomID === "undefined") {
+        console.error("❌ `roomID` が undefined です！処理を中断");
+        alert("❌ ルーム情報が取得できませんでした。ゲームを再起動してください。");
+        return;
+    }
+
+    if (isOnInitialCardTile(x, y)) {
+        let randomCard = cardPool[Math.floor(Math.random() * cardPool.length)];
+        console.log(`🎴 プレイヤーが ${randomCard.name} を獲得！（送信前）`);
+
+        fetch("/bordgame/game/cardsystem/save_card.php", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: new URLSearchParams({
-                playerID: playerID,
+                playerToken: playerToken,
+                roomID: roomID,  // 🔥 `roomID` を送信
                 cardID: randomCard.id
             })
-        }).then(() => {
-            alert(`🎴 あなたは「${randomCard.name}」を獲得しました！`);
+        })
+        .then(response => response.text())
+        .then(text => {
+            console.log("📡 `save_card.php` からの生レスポンス:", text);
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (error) {
+                console.error("❌ JSON パースエラー:", error);
+                alert("❌ サーバーからのレスポンスが無効です: " + text);
+                return;
+            }
+
+            console.log("📡 `save_card.php` の解析後レスポンス:", data);
+            if (data.success) {
+                alert(`🎴 あなたは「${randomCard.name}」を獲得しました！`);
+            } else {
+                console.error("❌ エラー:", data.error);
+                alert("❌ カード取得に失敗しました: " + (data.error || "原因不明のエラー"));
+            }
+        })
+        .catch(error => {
+            console.error("❌ `save_card.php` との通信エラー:", error);
+            alert("❌ サーバーとの通信に失敗しました");
         });
 
-        // 🎯 WebSocket 経由で他プレイヤーに通知
         socket.emit("receiveCard", {
-            playerID: playerID,
+            playerToken: playerToken,
             room: roomID,
             card: randomCard.id,
             cardName: randomCard.name,
@@ -45,11 +76,11 @@ function checkForCard(x, y, playerID) {
     }
 }
 
-// 🎯 サーバーからカード取得通知を受け取る
-socket.on("cardReceived", (data) => {
-    console.log(`📡 他プレイヤーがカード取得: ${data.playerID} が ${data.cardName} を取得 (ポイント: ${data.points})`);
 
-    if (data.playerID !== currentPlayer.id) {
-        alert(`📢 他のプレイヤー (${data.playerID}) が「${data.cardName}」を獲得しました！`);
-    }
+
+// 🎯 プレイヤー移動を監視し、カード取得処理を実行
+socket.on("playerMoved", (data) => {
+    console.log(`📡 プレイヤー移動検知: ID=${data.id}, x=${data.x}, y=${data.y}`);
+
+    handleCardPickup(data.token, data.room, data.x, data.y);
 });

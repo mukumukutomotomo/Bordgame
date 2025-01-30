@@ -84,7 +84,6 @@ fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID
 });
 
 function drawBoard() {
-    console.log("📌 drawBoard() 実行");
     board.innerHTML = "";
 
     for (let y = 0; y < 10; y++) {
@@ -123,8 +122,6 @@ function drawBoard() {
             board.appendChild(cell);
         }
     }
-
-    console.log("✅ drawBoard() 完了！");
 }
 function updatePlayerData(callback) {
     fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID}`)
