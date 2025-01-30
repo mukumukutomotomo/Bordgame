@@ -62,20 +62,20 @@ io.on("connection", async (socket) => {
             console.error("❌ movePlayer に無効なデータ:", data);
             return;
         }
-
+    
         // 🎲 移動ロジックを適用
         let player = rooms[data.room][data.id];
         player.x = data.x;
         player.y = data.y;
-
+    
         console.log(`🔄 ルーム ${data.room} でプレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
-
+    
         // 🎯 WebSocket で移動を通知 (全プレイヤーへ)
         io.to(data.room).emit("playerMoved", { id: data.id, x: data.x, y: data.y });
-
-        // 🎯 データベースに移動後の座標を保存
+    
+        // 🎯 データベースに移動後の座標を保存 (`token` を追加)
         axios.post("https://tohru-portfolio.secret.jp/bordgame/game/update_position.php", new URLSearchParams({
-            token: player.token,
+            token: data.token,  // 🔥 `token` を `update_position.php` に送る
             x: data.x,
             y: data.y,
             room: data.room
@@ -89,7 +89,7 @@ io.on("connection", async (socket) => {
             }
         }).catch(error => console.error("❌ update_position.php 取得エラー:", error));
     });
-
+    
 
     // 🎯 ゲーム開始処理
     socket.on("startGame", async (data) => {

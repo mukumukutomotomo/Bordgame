@@ -24,7 +24,7 @@ function movePlayer(steps) {
 
         let newX = data.currentPlayer.x;
         let newY = data.currentPlayer.y;
-        let playerID = data.currentPlayer.id || playerToken;  // ← ここで `id` がなければ `token` を使う
+        let playerID = data.currentPlayer.id || playerToken;
 
         console.log(`📌 最新の座標取得: x=${newX}, y=${newY}, playerID=${playerID}`);
 
@@ -72,6 +72,7 @@ function movePlayer(steps) {
                 console.log(`📡 WebSocket 送信: movePlayer -> id=${playerID}, x=${newX}, y=${newY}, room=${roomID}`);
                 socket.emit("movePlayer", {
                     id: playerID,
+                    token: playerToken,  // 🔥 サーバー側でデータベース更新するために `token` を送信
                     x: newX,
                     y: newY,
                     room: roomID
@@ -85,3 +86,9 @@ function movePlayer(steps) {
     })
     .catch(error => console.error("❌ session.php 取得エラー:", error));
 }
+
+// 🎯 WebSocket で `playerMoved` を受け取ったら `session.php` を取得
+socket.on("playerMoved", (data) => {
+    console.log(`📡 WebSocket 受信: playerMoved -> id=${data.id}, x=${data.x}, y=${data.y}`);
+    updatePlayerData(drawBoard);
+});
