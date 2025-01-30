@@ -121,6 +121,25 @@ io.on("connection", async (socket) => {
             console.error(`❌ session.php データ取得エラー:`, error.message);
         }
     });
+    
+        // 🎯 カード取得処理
+    socket.on("receiveCard", async (data) => {
+        if (!data.room || !data.playerID || !data.card) {
+            console.error("❌ receiveCard のデータが不正:", data);
+            return;
+        }
+
+        console.log(`🎴 プレイヤー ${data.playerID} が ${data.cardName} を取得 (ポイント: ${data.points})`);
+
+        // ルーム内の全プレイヤーに通知
+        io.to(data.room).emit("cardReceived", {
+            playerID: data.playerID,
+            card: data.card,
+            cardName: data.cardName,
+            points: data.points
+        });
+    });
+
 
     // 🎯 勝者決定処理
     socket.on("declareWinner", (data) => {
