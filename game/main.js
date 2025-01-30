@@ -155,16 +155,22 @@ socket.on("playerMoved", (data) => {
     });
 });
 
-
-// 🎯 プレイヤーリスト更新
 socket.on("updatePlayers", (data) => {
     console.log("📡 updatePlayers 受信:", data);
+
+    if (!Array.isArray(data)) {
+        console.error("❌ updatePlayers のデータ形式が不正です:", data);
+        return;
+    }
     players = {};
     data.forEach(player => {
-        players[player.id] = player;
+        if (player && player.id) {
+            players[player.id] = player;
+        }
     });
     console.log("✅ 更新後の players:", players);
 });
+
 
 // 🎯 ゲーム開始イベント
 socket.on("startGame", () => {

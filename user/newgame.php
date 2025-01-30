@@ -6,21 +6,31 @@ include('db.php');
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     try {
+        // 🎯 ランダムなルームIDを生成
         $roomID = "room_" . bin2hex(random_bytes(4));
 
+        // 🎯 ルーム専用のテーブルを作成（プレイヤーデータを保存）
         $sql = "CREATE TABLE `$roomID` (
             id INT AUTO_INCREMENT PRIMARY KEY,
             username VARCHAR(50) NOT NULL,
             x INT DEFAULT 0,
             y INT DEFAULT 0,
             token VARCHAR(32) UNIQUE NOT NULL,
-            playersize ENUM('small', 'normal', 'big') DEFAULT 'normal'
+            playersize ENUM('small', 'normal', 'big') DEFAULT 'normal',
+            Card_ID_001 BOOLEAN DEFAULT FALSE,
+            Card_ID_002 BOOLEAN DEFAULT FALSE,
+            Card_ID_003 BOOLEAN DEFAULT FALSE,
+            Card_ID_004 BOOLEAN DEFAULT FALSE,
+            Card_ID_005 BOOLEAN DEFAULT FALSE,
+            Card_ID_006 BOOLEAN DEFAULT FALSE,
+            Card_ID_007 BOOLEAN DEFAULT FALSE,
+            Card_ID_008 BOOLEAN DEFAULT FALSE
         )";
         $pdo->exec($sql);
 
         echo json_encode(["success" => true, "roomID" => $roomID]);
     } catch (PDOException $e) {
-        echo json_encode(["success" => false, "error" => "データベースエラー: " . $e->getMessage()]);
+        echo json_encode(["success" => false, "error" => "データベースエラー"]);
     }
 }
 ?>
