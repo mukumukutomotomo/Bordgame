@@ -70,7 +70,7 @@ io.on("connection", async (socket) => {
 
         console.log(`🔄 ルーム ${data.room} でプレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
 
-        // 🎯 WebSocket で移動を通知
+        // 🎯 WebSocket で移動を通知 (全プレイヤーへ)
         io.to(data.room).emit("playerMoved", { id: data.id, x: data.x, y: data.y });
 
         // 🎯 データベースに移動後の座標を保存
@@ -89,6 +89,7 @@ io.on("connection", async (socket) => {
             }
         }).catch(error => console.error("❌ update_position.php 取得エラー:", error));
     });
+
 
     // 🎯 ゲーム開始処理
     socket.on("startGame", async (data) => {

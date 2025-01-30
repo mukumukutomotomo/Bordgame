@@ -1,6 +1,7 @@
 if (!roomID) {
     console.error("❌ ルームIDが見つかりません");
 }
+
 function movePlayer(steps) {
     if (!playerToken || !roomID) {
         console.error("❌ プレイヤートークンまたはルームIDが見つかりません");
@@ -23,6 +24,9 @@ function movePlayer(steps) {
 
         let newX = data.currentPlayer.x;
         let newY = data.currentPlayer.y;
+        let playerID = data.currentPlayer.id || playerToken;  // ← ここで `id` がなければ `token` を使う
+
+        console.log(`📌 最新の座標取得: x=${newX}, y=${newY}, playerID=${playerID}`);
 
         for (let i = 0; i < Math.abs(steps); i++) {
             if (steps > 0) {
@@ -50,7 +54,7 @@ function movePlayer(steps) {
             token: playerToken,
             x: newX,
             y: newY,
-            room: roomID.replace("room_", "")  // ← 修正: "room_xxxx" の "room_" を削除
+            room: roomID.replace("room_", "")
         });
 
         fetch(`https://tohru-portfolio.secret.jp/bordgame/game/update_position.php?${sendData.toString()}`, {
@@ -63,6 +67,17 @@ function movePlayer(steps) {
                 console.error("❌ データベース更新失敗:", saveData.error);
             } else {
                 console.log("✅ データベースにプレイヤー座標を保存:", saveData);
+
+                // 🎯 WebSocket でサーバーにプレイヤーの移動を通知
+                console.log(`📡 WebSocket 送信: movePlayer -> id=${playerID}, x=${newX}, y=${newY}, room=${roomID}`);
+                socket.emit("movePlayer", {
+                    id: playerID,
+                    x: newX,
+                    y: newY,
+                    room: roomID
+                });
+
+                // 🎯 `session.php` から最新のプレイヤーデータを取得してから `drawBoard()`
                 updatePlayerData(drawBoard);
             }
         })
