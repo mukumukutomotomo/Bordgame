@@ -6,6 +6,9 @@ let zoomFactor = 0.05; // ズームの感度
 
 mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
 
+// **ページスクロールを禁止**
+document.body.style.overflow = "hidden";
+
 // **ズーム（ブラウザの中心を軸に拡大縮小、最小サイズ1.0に制限）**
 window.addEventListener(
     "wheel",
@@ -13,7 +16,6 @@ window.addEventListener(
         e.preventDefault();
 
         let newScale = scale;
-
         if (e.deltaY < 0) {
             newScale = Math.min(scale + zoomFactor, 3); // 最大3倍まで
         } else {
@@ -47,7 +49,6 @@ window.addEventListener("mousemove", (e) => {
     if (!isDragging) return;
     translateX = e.clientX - startX;
     translateY = e.clientY - startY;
-
     requestAnimationFrame(updateTransform);
 });
 
@@ -56,19 +57,29 @@ window.addEventListener("mouseup", () => {
 });
 
 // **ウィンドウリサイズ時にマップサイズを調整**
-window.addEventListener("resize", () => {
-    mapContainer.style.width = `${window.innerWidth}px`;
-    mapContainer.style.height = `${window.innerHeight}px`;
-});
+window.addEventListener("resize", updateTransform);
 
 // **マップがブラウザからはみ出さないように調整**
 function updateTransform() {
-    const rect = mapContainer.getBoundingClientRect();
-    const maxTranslateX = Math.max(0, (rect.width * scale - window.innerWidth) / 2);
-    const maxTranslateY = Math.max(0, (rect.height * scale - window.innerHeight) / 2);
+    const mapWidth = mapContainer.offsetWidth * scale;
+    const mapHeight = mapContainer.offsetHeight * scale;
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
 
-    translateX = Math.min(Math.max(translateX, -maxTranslateX), maxTranslateX);
-    translateY = Math.min(Math.max(translateY, -maxTranslateY), maxTranslateY);
+    // マップが画面より小さい場合、中央に固定
+    if (mapWidth <= screenWidth) {
+        translateX = 0;
+    } else {
+        const maxTranslateX = (mapWidth - screenWidth) / 2;
+        translateX = Math.min(Math.max(translateX, -maxTranslateX), maxTranslateX);
+    }
+
+    if (mapHeight <= screenHeight) {
+        translateY = 0;
+    } else {
+        const maxTranslateY = (mapHeight - screenHeight) / 2;
+        translateY = Math.min(Math.max(translateY, -maxTranslateY), maxTranslateY);
+    }
 
     mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
 }
