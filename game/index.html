@@ -8,42 +8,40 @@
     <script src="https://bordgame.onrender.com/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <h1>World Endless</h1>
     <p id="gameStatus">ゲームが開始されていません</p>
     <div id="game-header">
         <h1>World Endless</h1>
-        <p>ゲームが開始されていません</p>
     </div>
 
     <!-- メインマップ表示エリア -->
     <div id="map-wrapper">
         <div id="map-container">
-            <div class="map active" id="map-01" style="background-image: url('img/map/MAP_01.webp');"></div>
-            <div class="map" id="map-02" style="background-image: url('img/map/MAP_02.webp');"></div>
-            <div class="map" id="map-03" style="background-image: url('img/map/MAP_03.webp');"></div>
-            <div class="map" id="map-04" style="background-image: url('img/map/MAP_04.webp');"></div>
-            <div class="map" id="map-05" style="background-image: url('img/map/MAP_05.webp');"></div>
-            <div class="map" id="map-06" style="background-image: url('img/map/MAP_06.webp');"></div>
-            <div class="map" id="map-07" style="background-image: url('img/map/MAP_07.webp');"></div>
-            <div class="map" id="map-08" style="background-image: url('img/map/MAP_08.webp');"></div>
-            <div class="map" id="map-09" style="background-image: url('img/map/MAP_09.webp');"></div>
+            <div class="map active" id="map-01" style="background-image: url('https://tohru-portfolio.secret.jp/bordgame/img/map//MAP_01.webp');"></div>
+            <div class="map" id="map-02" style="background-image: url('https://tohru-portfolio.secret.jp/bordgame/img/map//MAP_02.webp');"></div>
+            <div class="map" id="map-03" style="background-image: url('https://tohru-portfolio.secret.jp/bordgame/img/map//MAP_03.webp');"></div>
+            <div class="map" id="map-04" style="background-image: url('https://tohru-portfolio.secret.jp/bordgame/img/map//MAP_04.webp');"></div>
+            <div class="map" id="map-05" style="background-image: url('https://tohru-portfolio.secret.jp/bordgame/img/map//MAP_05.webp');"></div>
+            <div class="map" id="map-06" style="background-image: url('https://tohru-portfolio.secret.jp/bordgame/img/map//MAP_06.webp');"></div>
+            <div class="map" id="map-07" style="background-image: url('https://tohru-portfolio.secret.jp/bordgame/img/map//MAP_07.webp');"></div>
+            <div class="map" id="map-08" style="background-image: url('https://tohru-portfolio.secret.jp/bordgame/img/map//MAP_08.webp');"></div>
+            <div class="map" id="map-09" style="background-image: url('https://tohru-portfolio.secret.jp/bordgame/img/map//MAP_09.webp');"></div>
         </div>
     </div>
 
     <!-- マップ切り替えボタン -->
     <div id="map-buttons">
         <button onclick="changeMap('map-01')">庭</button>
-        <button onclick="changeMap('map-02')">ファンタジー</button>
-        <button onclick="changeMap('map-03')">電子世界</button>
-        <button onclick="changeMap('map-04')">恐竜</button>
-        <button onclick="changeMap('map-05')">二次元</button>
+        <button onclick="changeMap('map-02')">電子世界</button>
+        <button onclick="changeMap('map-03')">ファンタジー</button>
+        <button onclick="changeMap('map-04')">未来都市</button>
+        <button onclick="changeMap('map-05')">お菓子</button>
         <button onclick="changeMap('map-06')">水中都市</button>
-        <button onclick="changeMap('map-07')">お菓子</button>
-        <button onclick="changeMap('map-08')">未来都市</button>
+        <button onclick="changeMap('map-07')">二次元</button>
+        <button onclick="changeMap('map-08')">恐竜</button>
         <button onclick="changeMap('map-09')">地獄</button>
     </div>
 
-    
+
     <div id="board" style="display: none;"></div>
     
     <div id="controls">

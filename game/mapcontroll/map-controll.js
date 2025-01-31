@@ -1,20 +1,16 @@
 const mapContainer = document.getElementById("map-container");
-let scale = 1.8; // 初期ズーム（庭を90%に表示）
+let scale = 1; // 初期ズーム
 let isDragging = false;
-let startX, startY, translateX = -1900, translateY = -1350; // 初期位置
+let startX, startY, translateX = 0, translateY = 0;
 let zoomFactor = 0.05; // ズームの感度
 
 mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
 
-// **ページスクロールを無効化**
-window.addEventListener("wheel", (e) => e.preventDefault(), { passive: false });
-window.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
-
-// **マウスカーソルを基準にズーム**
+// **ズーム（マウスホイールで拡大縮小）**
 window.addEventListener(
     "wheel",
     (e) => {
-        e.preventDefault(); // デフォルトのスクロールを無効化
+        e.preventDefault();
 
         let newScale = scale;
 
@@ -24,13 +20,12 @@ window.addEventListener(
             newScale = Math.max(scale - zoomFactor, 0.5); // 最小0.5倍まで
         }
 
-        // **ズームの基準点をマウスカーソルの位置に変更**
-        const mouseX = e.clientX; // マウスのX座標
-        const mouseY = e.clientY; // マウスのY座標
-
-        // **マップ上での相対位置を計算**
-        const offsetX = (mouseX - translateX) * (newScale / scale - 1);
-        const offsetY = (mouseY - translateY) * (newScale / scale - 1);
+        // マップの中心を基準にズーム
+        const rect = mapContainer.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const offsetX = (centerX - translateX) * (newScale / scale - 1);
+        const offsetY = (centerY - translateY) * (newScale / scale - 1);
 
         translateX -= offsetX;
         translateY -= offsetY;
@@ -40,10 +35,10 @@ window.addEventListener(
             mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
         });
     },
-    { passive: false } // **ここが重要！`passive: false` を明示的に指定**
+    { passive: false }
 );
 
-// クリック＆ドラッグでマップを移動
+// **クリック＆ドラッグでマップ移動**
 mapContainer.addEventListener("mousedown", (e) => {
     isDragging = true;
     startX = e.clientX - translateX;

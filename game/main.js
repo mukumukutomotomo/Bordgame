@@ -180,6 +180,16 @@ socket.on("startGame", () => {
     board.style.display = "grid";
     drawBoard(); 
 });
+function changeMap(mapId) {
+    const maps = document.querySelectorAll(".map");
+
+    maps.forEach((map) => {
+        map.classList.remove("active");
+    });
+
+    document.getElementById(mapId).classList.add("active");
+}
+
 
 
 // 🎯 ゲーム終了
