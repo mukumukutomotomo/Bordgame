@@ -55,3 +55,79 @@ button {
     color: black;
     text-align: center;
 }
+
+/* タイトル（赤い部分） */
+#game-header {
+    width: 100%;
+    height: 80px;
+    background-color: red;
+    text-align: center;
+    color: white;
+    position: fixed;
+    top: 0;
+    left: 0;
+    line-height: 80px;
+    font-size: 24px;
+}
+
+/* マップ表示エリア */
+#map-wrapper {
+    width: 100vw;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+    position: relative;
+    top: 80px;
+}
+
+/* マップのコンテナ */
+#map-container {
+    width: 1600px;
+    height: 900px;
+    position: absolute;
+    transform-origin: center center;
+}
+
+/* 各マップ */
+.map {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    pointer-events: none;
+}
+
+/* アクティブマップ */
+.map.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* マップ切り替えボタン */
+#map-buttons {
+    position: fixed;
+    right: 10px;
+    top: 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#map-buttons button {
+    width: 80px;
+    height: 40px;
+    border: none;
+    background: black;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+
+#map-buttons button:hover {
+    background: gray;
+}
