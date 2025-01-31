@@ -36,11 +36,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION["username"] = $username;
         $_SESSION["token"] = $token;
         $_SESSION["roomID"] = $roomID;
+        $user_id = $_SESSION["user_id"]; // user_idを取得
 
         echo json_encode([
             "success" => true,
             "token" => $token,
-            "redirect" => "https://tohru-portfolio.secret.jp/bordgame/game/index.html?room=$roomID&token=$token"
+            "redirect" => "https://tohru-portfolio.secret.jp/bordgame/game/index.html?room=$roomID&token=$token&user_id=$user_id"
         ]);
 
     } catch (PDOException $e) {

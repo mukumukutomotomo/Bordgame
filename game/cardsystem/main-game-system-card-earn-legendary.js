@@ -1,5 +1,3 @@
-// const roomID = window.roomID; 
-// const playerToken = window.playerToken;
 window.onload = function() {
     console.log("📡 `main-game-system-card-earns.js` で取得した roomID:", roomID);
 };
@@ -23,6 +21,7 @@ const cardPool = [
 function isOnInitialCardTile(x, y) {
     return initialCardTiles.some(tile => tile.x === x && tile.y === y);
 }
+
 function handleCardPickup(playerToken, roomID, x, y) {
     roomID = roomID || window.roomID;
     playerToken = playerToken || window.playerToken;
@@ -40,12 +39,12 @@ function handleCardPickup(playerToken, roomID, x, y) {
         console.log(`🎴 プレイヤーが ${randomCard.name} を獲得！（送信前）`);
         console.log(`📡 送信するデータ - roomID: ${roomID}, playerToken: ${playerToken}, cardID: ${randomCard.id}`);
 
-        fetch("/bordgame/game/cardsystem/save_card.php", {
+        fetch("/bordgame/game/cardsystem/save_card_legendary.php", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: new URLSearchParams({
                 playerToken: playerToken,
-                roomID: roomID,  // 🔥 修正後の `roomID`
+                roomID: roomID,  
                 cardID: randomCard.id
             })
         })
@@ -67,6 +66,11 @@ function handleCardPickup(playerToken, roomID, x, y) {
             } else {
                 console.error("❌ エラー:", data.error);
                 alert("❌ カード取得に失敗しました: " + (data.error || "原因不明のエラー"));
+
+                // 🎯 すでに取得済みの場合の特別な処理
+                if (data.error.includes("このカードはすでに他のプレイヤーが取得しています")) {
+                    alert("🚫 このカードは既に取得されているため、獲得できません！");
+                }
             }
         })
         .catch(error => {
@@ -76,17 +80,28 @@ function handleCardPickup(playerToken, roomID, x, y) {
 
         socket.emit("receiveCard", {
             playerToken: playerToken,
-            room: roomID,  // 🔥 修正後の `roomID`
+            room: roomID,  
             card: randomCard.id,
             cardName: randomCard.name,
             points: randomCard.points
         });
     }
 }
-
-
-// 🎯 プレイヤー移動を監視し、カード取得処理を実行
 socket.on("playerMoved", (data) => {
     console.log(`📡 プレイヤー移動検知: ID=${data.id}, x=${data.x}, y=${data.y}`);
-    handleCardPickup(data.token, data.room, data.x, data.y);
+    
+    // 🎯 `window.id` を確実に数値型に統一
+    window.userID = Number(window.userID);
+    data.id = Number(data.id); // これでどちらも確実に `number` 型になる
+
+    console.log("🔍 `data.id` の値:", data.id, " (型: " + typeof data.id + ")");
+    console.log("🔍 `window.id` の値:", window.userID, " (型: " + typeof window.id + ")");
+
+    // 🎯 IDが一致する場合のみ処理
+    if (data.id === window.userID) {
+        console.log("✅ 自分の移動イベントなので処理を実行");
+        handleCardPickup(data.token, data.room, data.x, data.y);
+    } else {
+        console.log("🚫 他プレイヤーの移動イベントなので処理しない");
+    }
 });

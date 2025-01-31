@@ -29,7 +29,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     error_log("📡 [save_card.php] 使用するテーブル: {$roomTable}");
 
     try {
-        $stmt = $pdo->prepare("UPDATE `$roomTable` SET `$cardID` = TRUE WHERE token = ?");
+        // 🎯 すでに誰かがこのカードを持っているかチェック
+        $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM `$roomTable` WHERE `$cardID` = 1");
+        $checkStmt->execute();
+        $cardExists = $checkStmt->fetchColumn();
+
+        if ($cardExists > 0) {
+            error_log("❌ [save_card.php] カード {$cardID} はすでに取得されています");
+            echo json_encode(["success" => false, "error" => "このカードはすでに他のプレイヤーが取得しています"]);
+            exit;
+        }
+
+        // 🎯 まだ誰も持っていなければ、プレイヤーのデータを更新
+        $stmt = $pdo->prepare("UPDATE `$roomTable` SET `$cardID` = 1 WHERE token = ?");
         $stmt->execute([$playerToken]);
         $affectedRows = $stmt->rowCount();
 
