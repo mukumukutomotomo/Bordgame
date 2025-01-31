@@ -1,6 +1,7 @@
 body {
     font-family: Arial, sans-serif;
     text-align: center;
+    margin: 0;
 }
 
 #board {
@@ -75,15 +76,6 @@ button {
     height: calc(100vh - 80px);
     overflow: hidden;
     position: relative;
-    top: 80px;
-}
-
-/* マップのコンテナ */
-#map-container {
-    width: 1600px;
-    height: 900px;
-    position: absolute;
-    transform-origin: center center;
 }
 
 /* 各マップ */
@@ -129,4 +121,45 @@ button {
 
 #map-buttons button:hover {
     background: gray;
+}
+
+#map-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+}
+
+/* UI要素をマップの上に配置 */
+#game-header, #gameStatus, #controls {
+    position: absolute;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    border-radius: 5px;
+}
+
+/* 位置調整 */
+#game-header {
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+#gameStatus {
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+#controls {
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
 }
