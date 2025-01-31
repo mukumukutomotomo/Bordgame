@@ -14,7 +14,7 @@
     </div>
 
     <!-- メインマップ表示エリア -->
-    <div id="map-wrapper">
+    <!-- <div id="map-wrapper">
         <div id="map-container">
             <div class="map active" id="map-01" style="background-image: url('https://tohru-portfolio.secret.jp/bordgame/img/map//MAP_01.webp');"></div>
             <div class="map" id="map-02" style="background-image: url('https://tohru-portfolio.secret.jp/bordgame/img/map//MAP_02.webp');"></div>
@@ -26,7 +26,7 @@
             <div class="map" id="map-08" style="background-image: url('https://tohru-portfolio.secret.jp/bordgame/img/map//MAP_08.webp');"></div>
             <div class="map" id="map-09" style="background-image: url('https://tohru-portfolio.secret.jp/bordgame/img/map//MAP_09.webp');"></div>
         </div>
-    </div>
+    </div> -->
 
     <!-- マップ切り替えボタン -->
     <div id="map-buttons">
@@ -43,6 +43,7 @@
 
 
     <div id="board" style="display: none;"></div>
+
     
     <div id="controls">
         <button id="moveForward">⬆️ 2マス進む</button>
@@ -54,6 +55,8 @@
         <button id="shrunkenButton">インベントリ</button>
         <button id="winButton">🏆 勝利</button> 
     </div>
+    <div id="hp-container"></div>
+    
     
     
     <!-- 勝利/敗北メッセージ -->
@@ -72,6 +75,7 @@
     <script src="main.js"></script>
     <script src="moveplayer.js"></script>
     <script src="/bordgame/game/gamesystem/sub-game-system-rank-calculation.js"></script>
+    <script src="/bordgame/game/gamesystem/main-game-system-health-controll.js"></script>
     <script src="/bordgame/game/mapcontroll/map-controll.js"></script>
     <script src="/bordgame/game/cardsystem/main-game-system-card-earn-legendary.js"></script>
     

@@ -7,36 +7,37 @@ let zoomFactor = 0.05; // ズームの感度
 mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
 
 // **ズーム（マウスホイールで拡大縮小）**
-window.addEventListener(
-    "wheel",
-    (e) => {
-        e.preventDefault();
+// Commented out to disable zoom functionality
+// window.addEventListener(
+//     "wheel",
+//     (e) => {
+//         e.preventDefault();
 
-        let newScale = scale;
+//         let newScale = scale;
 
-        if (e.deltaY < 0) {
-            newScale = Math.min(scale + zoomFactor, 3); // 最大3倍まで
-        } else {
-            newScale = Math.max(scale - zoomFactor, 0.5); // 最小0.5倍まで
-        }
+//         if (e.deltaY < 0) {
+//             newScale = Math.min(scale + zoomFactor, 3); // 最大3倍まで
+//         } else {
+//             newScale = Math.max(scale - zoomFactor, 0.5); // 最小0.5倍まで
+//         }
 
-        // マップの中心を基準にズーム
-        const rect = mapContainer.getBoundingClientRect();
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        const offsetX = (centerX - translateX) * (newScale / scale - 1);
-        const offsetY = (centerY - translateY) * (newScale / scale - 1);
+//         // マップの中心を基準にズーム
+//         const rect = mapContainer.getBoundingClientRect();
+//         const centerX = rect.width / 2;
+//         const centerY = rect.height / 2;
+//         const offsetX = (centerX - translateX) * (newScale / scale - 1);
+//         const offsetY = (centerY - translateY) * (newScale / scale - 1);
 
-        translateX -= offsetX;
-        translateY -= offsetY;
-        scale = newScale;
+//         translateX -= offsetX;
+//         translateY -= offsetY;
+//         scale = newScale;
 
-        requestAnimationFrame(() => {
-            mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
-        });
-    },
-    { passive: false }
-);
+//         requestAnimationFrame(() => {
+//             mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+//         });
+//     },
+//     { passive: false }
+// );
 
 // **クリック＆ドラッグでマップ移動**
 mapContainer.addEventListener("mousedown", (e) => {

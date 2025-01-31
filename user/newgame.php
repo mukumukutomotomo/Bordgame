@@ -15,6 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             username VARCHAR(50) NOT NULL,
             x INT DEFAULT 0,
             y INT DEFAULT 0,
+            hp INT DEFAULT 10 CHECK (hp BETWEEN 0 AND 10),
             token VARCHAR(32) UNIQUE NOT NULL,
             playersize ENUM('small', 'normal', 'big') DEFAULT 'normal',
             Card_ID_001 BOOLEAN DEFAULT FALSE,
