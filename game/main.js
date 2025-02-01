@@ -90,8 +90,8 @@ fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID
 function drawBoard() {
     board.innerHTML = "";
 
-    for (let y = 0; y < 15; y++) {
-        for (let x = 0; x < 10; x++) {
+    for (let y = 0; y < 10; y++) {
+        for (let x = 0; x < 15; x++) {
             const cell = document.createElement("div");
             cell.classList.add("cell");
 

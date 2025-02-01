@@ -1,18 +1,19 @@
-const mapContainer = document.getElementById("map-container");
-let scale = 1; // 初期ズーム
-let isDragging = false;
-let startX, startY, translateX = 0, translateY = 0;
-let zoomFactor = 0.05; // ズームの感度
+document.addEventListener("DOMContentLoaded", function () {
+    const mapContainer = document.getElementById("map-container");
+    const board = document.getElementById("board");
 
-mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+    if (!mapContainer || !board) {
+        console.error("❌ mapContainer または board が見つかりません");
+        return;
+    }
 
-// **ページスクロールを禁止**
-document.body.style.overflow = "hidden";
+    let scale = 1; // 初期ズーム
+    let isDragging = false;
+    let startX, startY, translateX = 0, translateY = 0;
+    let zoomFactor = 0.05; // ズームの感度
 
-// **ズーム（ブラウザの中心を軸に拡大縮小、最小サイズ1.0に制限）**
-window.addEventListener(
-    "wheel",
-    (e) => {
+    // **ズーム処理（マップ＆ボードを拡大縮小）**
+    window.addEventListener("wheel", (e) => {
         e.preventDefault();
 
         let newScale = scale;
@@ -22,7 +23,7 @@ window.addEventListener(
             newScale = Math.max(scale - zoomFactor, 1); // 最小1倍まで
         }
 
-        // ブラウザの中心を基準にズーム
+        // ズームの中心補正
         const rect = mapContainer.getBoundingClientRect();
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
@@ -33,53 +34,55 @@ window.addEventListener(
         translateY -= offsetY;
         scale = newScale;
 
-        requestAnimationFrame(updateTransform);
-    },
-    { passive: false }
-);
+        updateTransform();
+    }, { passive: false });
 
-// **クリック＆ドラッグでマップ移動（画面端から離れないように制限）**
-mapContainer.addEventListener("mousedown", (e) => {
-    isDragging = true;
-    startX = e.clientX - translateX;
-    startY = e.clientY - translateY;
-});
+    // **ドラッグでマップ＆ボードを移動**
+    mapContainer.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+    });
 
-window.addEventListener("mousemove", (e) => {
-    if (!isDragging) return;
-    translateX = e.clientX - startX;
-    translateY = e.clientY - startY;
-    requestAnimationFrame(updateTransform);
-});
+    window.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        updateTransform();
+    });
 
-window.addEventListener("mouseup", () => {
-    isDragging = false;
-});
+    window.addEventListener("mouseup", () => {
+        isDragging = false;
+    });
 
-// **ウィンドウリサイズ時にマップサイズを調整**
-window.addEventListener("resize", updateTransform);
+    // **ウィンドウリサイズ時にマップとボードを調整**
+    window.addEventListener("resize", updateTransform);
 
-// **マップがブラウザからはみ出さないように調整**
-function updateTransform() {
-    const mapWidth = mapContainer.offsetWidth * scale;
-    const mapHeight = mapContainer.offsetHeight * scale;
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
+    // **マップとボードを画面内に収める**
+    function updateTransform() {
+        const mapWidth = mapContainer.offsetWidth * scale;
+        const mapHeight = mapContainer.offsetHeight * scale;
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
 
-    // マップが画面より小さい場合、中央に固定
-    if (mapWidth <= screenWidth) {
-        translateX = 0;
-    } else {
-        const maxTranslateX = (mapWidth - screenWidth) / 2;
-        translateX = Math.min(Math.max(translateX, -maxTranslateX), maxTranslateX);
+        if (mapWidth <= screenWidth) {
+            translateX = 0;
+        } else {
+            const maxTranslateX = (mapWidth - screenWidth) / 2;
+            translateX = Math.min(Math.max(translateX, -maxTranslateX), maxTranslateX);
+        }
+
+        if (mapHeight <= screenHeight) {
+            translateY = 0;
+        } else {
+            const maxTranslateY = (mapHeight - screenHeight) / 2;
+            translateY = Math.min(Math.max(translateY, -maxTranslateY), maxTranslateY);
+        }
+
+        // **マップの位置を適用**
+        mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+
+        // **ボードもマップと同じ `translate` を適用**
+        board.style.transform = `perspective(800px) rotateX(45deg) scale(${scale})`;
     }
-
-    if (mapHeight <= screenHeight) {
-        translateY = 0;
-    } else {
-        const maxTranslateY = (mapHeight - screenHeight) / 2;
-        translateY = Math.min(Math.max(translateY, -maxTranslateY), maxTranslateY);
-    }
-
-    mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
-}
+});
