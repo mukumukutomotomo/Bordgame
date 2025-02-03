@@ -16,14 +16,21 @@ function changeMap(mapId) {
 // 🎯 サーバーから指定マップのプレイヤーデータを受信
 socket.on("updateViewMap", (data) => {
     console.log(`📡 WebSocket 受信: マップ ${data.mapID} のプレイヤー情報を更新`);
-    
-    players = {};
+
+    players = {}; // 初期化
     data.players.forEach(player => {
-        players[player.id] = player;
+        players[player.id] = {
+            id: player.id,
+            username: player.username,
+            x: player.x,
+            y: player.y,
+            mapID: player.mapID
+        };
     });
 
-    drawBoard();
+    drawBoard(); // ✅ 変更後のプレイヤー情報で再描画
 });
+
 
 document.addEventListener("DOMContentLoaded", function () {
     const mapContainer = document.getElementById("map-container");
@@ -108,8 +115,5 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // **マップの位置を適用**
         mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
-
-        // **ボードもマップと同じ `translate` を適用**
-        board.style.transform = `perspective(800px) rotateX(45deg) scale(${scale})`;
     }
 });

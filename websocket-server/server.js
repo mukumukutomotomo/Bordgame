@@ -18,7 +18,7 @@ io.on("connection", async (socket) => {
 
     // 🎯 クライアントをルームに参加させる
     socket.on("joinRoom", (data) => {
-        console.log("📡 joinRoom 受信データ:", data);
+        console.log("📡 joinRoom 受信:", data);
     
         if (!data.room || !data.playerID || !data.mapID) {
             console.error("❌ 無効な joinRoom データ:", data);
@@ -26,23 +26,23 @@ io.on("connection", async (socket) => {
         }
     
         socket.join(data.room);
-
+    
         if (!rooms[data.room]) {
             rooms[data.room] = {};
         }
-
+    
         rooms[data.room][data.playerID] = {
             id: data.playerID,
             username: data.username || `Player${data.playerID}`,
             x: 0,
             y: 0,
-            mapID: data.mapID,  // 現在いるマップ
+            mapID: data.mapID,
             socketId: socket.id,
         };
-
-        console.log(`📡 ルーム ${data.room} にプレイヤー ${data.playerID} を登録 (マップ: ${data.mapID})`);
+    
+        console.log(`✅ ルーム ${data.room} にプレイヤー ${data.playerID} を登録 (マップ: ${data.mapID})`);
         io.to(data.room).emit("updatePlayers", Object.values(rooms[data.room]));
-    });
+    });    
 
     // 🎯 プレイヤーがマップの表示を変更（ただし移動はしない）
     socket.on("viewMap", (data) => {

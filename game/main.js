@@ -97,7 +97,6 @@ fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID
         console.error("❌ プレイヤーデータ取得失敗:", data.error);
     }
 });
-
 function drawBoard() {
     const board = document.getElementById("board");
     board.innerHTML = "";
@@ -107,16 +106,17 @@ function drawBoard() {
             const cell = document.createElement("div");
             cell.classList.add("cell");
 
-            // 🎯 表示中のマップのプレイヤーのみ描画
+            // 🎯 プレイヤーが表示中の `viewingMapID` にいるか確認
             Object.values(players).forEach(player => {
                 if (player.mapID === viewingMapID && player.x === x && player.y === y) {
                     const playerElement = document.createElement("div");
                     playerElement.classList.add("player");
+                    playerElement.textContent = player.username; // プレイヤー名を表示
 
                     if (player.id === userID) {
-                        playerElement.style.color = "blue"; // 自分は青
+                        playerElement.style.backgroundColor = "blue"; // 自分のコマは青
                     } else {
-                        playerElement.style.color = "red"; // 他プレイヤーは赤
+                        playerElement.style.backgroundColor = "red"; // 他プレイヤーのコマは赤
                     }
 
                     cell.appendChild(playerElement);
@@ -127,6 +127,7 @@ function drawBoard() {
         }
     }
 }
+
 
 function updatePlayerData(callback) {
     fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID}`)
@@ -165,12 +166,21 @@ socket.on("updatePlayers", (data) => {
         return;
     }
 
-    // `players` を適切に更新
+    // 🎯 `players` オブジェクトを更新（mapIDも含める）
     players = {};
     data.players.forEach(player => {
-        players[player.id] = player;
+        players[player.id] = {
+            id: player.id,
+            username: player.username,
+            x: player.x,
+            y: player.y,
+            mapID: player.mapID || "map-01" // ✅ `mapID` をデフォルト "map-01" にする
+        };
     });
+
+    drawBoard(); // ✅ `players` 更新後に再描画
 });
+
 
 
 // 🎯 ゲーム開始イベント
