@@ -1,3 +1,30 @@
+let currentMapID = "map-01"; // 実際に自分がいるマップ
+let viewingMapID = "map-01"; // 表示しているマップ（変更可能）
+
+function changeMap(mapId) {
+    viewingMapID = mapId; // 表示中のマップを変更
+    console.log(`📌 マップ切り替え: ${mapId} (現在地: ${currentMapID})`);
+
+    // 🎯 WebSocket で表示するマップのデータを取得
+    socket.emit("viewMap", {
+        room: roomID,
+        playerID: userID,
+        mapID: mapId
+    });
+}
+
+// 🎯 サーバーから指定マップのプレイヤーデータを受信
+socket.on("updateViewMap", (data) => {
+    console.log(`📡 WebSocket 受信: マップ ${data.mapID} のプレイヤー情報を更新`);
+    
+    players = {};
+    data.players.forEach(player => {
+        players[player.id] = player;
+    });
+
+    drawBoard();
+});
+
 document.addEventListener("DOMContentLoaded", function () {
     const mapContainer = document.getElementById("map-container");
     const board = document.getElementById("board");

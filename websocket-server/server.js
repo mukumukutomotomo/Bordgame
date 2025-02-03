@@ -3,9 +3,11 @@ const http = require("http");
 const socketIo = require("socket.io");
 const axios = require("axios");
 const cors = require("cors");
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, { cors: { origin: "*" } });
+
 app.use(cors()); // CORS 設定
 const LOLLIPOP_API = "https://tohru-portfolio.secret.jp/bordgame/game/session.php";
 let rooms = {}; // ルームごとのプレイヤーデータ { roomID: { playerID: {...} } }
@@ -15,60 +17,61 @@ io.on("connection", async (socket) => {
     console.log(`✅ 新しいプレイヤーが接続: ${socket.id}`);
 
     // 🎯 クライアントをルームに参加させる
-    socket.on("joinRoom", (roomID) => {
-        console.log(`🔗 クライアント ${socket.id} がルーム ${roomID} に参加`);
-        socket.join(roomID);
-
-        // ルームのプレイヤーデータを初期化
-        if (!rooms[roomID]) {
-            rooms[roomID] = {};
-        }
-
-        rooms[roomID][socket.id] = { id: socket.id, username: `Player${socket.id}`, x: 0, y: 0 };
-
-        console.log(`📡 現在の rooms:`, io.sockets.adapter.rooms);
-    });
-
-    // 🎯 プレイヤー登録
-    socket.on("registerPlayer", (data) => {
-        if (!data.id || !data.token || !data.room) {
-            console.error("❌ registerPlayer に必要なデータが不足！");
+    socket.on("joinRoom", (data) => {
+        if (!data.room || !data.playerID || !data.mapID) {
+            console.error("❌ 無効な joinRoom データ:", data);
             return;
         }
+
+        socket.join(data.room);
 
         if (!rooms[data.room]) {
             rooms[data.room] = {};
         }
 
-        rooms[data.room][data.id] = {
-            id: data.id,
-            username: data.username || `Player${data.id}`,
-            token: data.token,
+        rooms[data.room][data.playerID] = {
+            id: data.playerID,
+            username: data.username || `Player${data.playerID}`,
+            x: 0,
+            y: 0,
+            mapID: data.mapID,  // 現在いるマップ
             socketId: socket.id,
-            x: data.x || 0,
-            y: data.y || 0
         };
 
-        console.log(`✅ ルーム ${data.room} にプレイヤー登録: ID=${data.id}`);
+        console.log(`📡 ルーム ${data.room} にプレイヤー ${data.playerID} を登録 (マップ: ${data.mapID})`);
         io.to(data.room).emit("updatePlayers", Object.values(rooms[data.room]));
+    });
+
+    // 🎯 プレイヤーがマップの表示を変更（ただし移動はしない）
+    socket.on("viewMap", (data) => {
+        if (!data.room || !data.playerID || !data.mapID) {
+            console.error("❌ 無効な viewMap データ:", data);
+            return;
+        }
+
+        console.log(`👀 プレイヤー ${data.playerID} がマップ ${data.mapID} を閲覧`);
+        
+        // 🎯 指定マップのプレイヤーデータを送信
+        const filteredPlayers = Object.values(rooms[data.room]).filter(p => p.mapID === data.mapID);
+        socket.emit("updateViewMap", { mapID: data.mapID, players: filteredPlayers });
     });
 
     // 🎯 プレイヤー移動処理
     socket.on("movePlayer", (data) => {
-        if (!data.id || !data.room || !rooms[data.room] || !rooms[data.room][data.id]) {
+        if (!data.room || !data.playerID || !rooms[data.room] || !rooms[data.room][data.playerID]) {
             console.error("❌ movePlayer に無効なデータ:", data);
             return;
         }
-        let player = rooms[data.room][data.id];
+        let player = rooms[data.room][data.playerID];
         player.x = data.x;
         player.y = data.y;
-        console.log(`🔄 ルーム ${data.room} でプレイヤー ${data.id} が移動: x=${data.x}, y=${data.y}`);
-    
-        // 🎯 移動を通知 (全プレイヤーへ)
-        io.to(data.room).emit("playerMoved", { id: data.id, x: data.x, y: data.y });
+
+        console.log(`🔄 ルーム ${data.room} - プレイヤー ${data.playerID} 移動: x=${data.x}, y=${data.y}`);
+        io.to(data.room).emit("playerMoved", { id: data.playerID, x: data.x, y: data.y });
+
         // 🎯 データベースに移動後の座標を保存
         axios.post("https://tohru-portfolio.secret.jp/bordgame/game/update_position.php", new URLSearchParams({
-            token: data.token,  // 🔥 `token` を `update_position.php` に送る
+            token: data.token,
             x: data.x,
             y: data.y,
             room: data.room
@@ -82,12 +85,9 @@ io.on("connection", async (socket) => {
             }
         }).catch(error => console.error("❌ update_position.php 取得エラー:", error));
     });
-    
 
     // 🎯 ゲーム開始処理
     socket.on("startGame", async (data) => {
-        console.log("📡 startGame イベント受信:", data);
-
         if (!data.room) {
             console.error("❌ ルームIDが指定されていません");
             return;
@@ -96,11 +96,7 @@ io.on("connection", async (socket) => {
         console.log(`🎮 ルーム ${data.room} でゲーム開始`);
 
         try {
-            console.log(`📡 session.php へ送信するデータ: { token: "SERVER_ADMIN_TOKEN", room: "${data.room}" }`);
-
             const response = await axios.get(`${LOLLIPOP_API}?room=${data.room}&token=SERVER_ADMIN_TOKEN`);
-
-            console.log("📡 session.php のレスポンス:", response.data);
 
             if (response.data.success) {
                 rooms[data.room] = response.data.players.reduce((acc, player) => {
@@ -109,10 +105,7 @@ io.on("connection", async (socket) => {
                 }, {});
 
                 console.log(`✅ ルーム ${data.room} の最新プレイヤーリスト更新`);
-                console.log(`Sending updatePlayers to room: ${data.room}`);
                 io.to(data.room).emit("updatePlayers", Object.values(rooms[data.room]));
-                console.log(`Sending startGame to room: ${data.room}`);
-                console.log(`📡 現在のルーム情報:`, io.sockets.adapter.rooms);
                 io.to(data.room).emit("startGame");
             } else {
                 console.error(`❌ ルーム ${data.room} のプレイヤーデータ取得失敗:`, response.data.error);
@@ -121,8 +114,8 @@ io.on("connection", async (socket) => {
             console.error(`❌ session.php データ取得エラー:`, error.message);
         }
     });
-    
-        // 🎯 カード取得処理
+
+    // 🎯 カード取得処理
     socket.on("receiveCard", async (data) => {
         if (!data.room || !data.playerID || !data.card) {
             console.error("❌ receiveCard のデータが不正:", data);
@@ -130,8 +123,6 @@ io.on("connection", async (socket) => {
         }
 
         console.log(`🎴 プレイヤー ${data.playerID} が ${data.cardName} を取得 (ポイント: ${data.points})`);
-
-        // ルーム内の全プレイヤーに通知
         io.to(data.room).emit("cardReceived", {
             playerID: data.playerID,
             card: data.card,
@@ -139,7 +130,6 @@ io.on("connection", async (socket) => {
             points: data.points
         });
     });
-
 
     // 🎯 勝者決定処理
     socket.on("declareWinner", (data) => {
@@ -149,13 +139,8 @@ io.on("connection", async (socket) => {
         }
 
         console.log(`🏆 ルーム ${data.room} でプレイヤー ${data.winnerId} が勝利`);
+        io.to(data.room).emit("gameOver", { winnerId: data.winnerId });
 
-        // ルーム内の全プレイヤーにゲーム終了を通知
-        io.to(data.room).emit("gameOver", {
-            winnerId: data.winnerId
-        });
-
-        // ルームのプレイヤー移動を禁止する
         delete rooms[data.room];
     });
 
@@ -169,7 +154,6 @@ io.on("connection", async (socket) => {
         console.log(`🛑 ルーム ${data.room} のゲーム終了`);
         io.to(data.room).emit("endGame");
     });
-    
 
     // 🎯 クライアント切断処理
     socket.on("disconnect", () => {

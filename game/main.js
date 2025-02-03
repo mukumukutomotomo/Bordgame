@@ -88,6 +88,7 @@ fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID
 });
 
 function drawBoard() {
+    const board = document.getElementById("board");
     board.innerHTML = "";
 
     for (let y = 0; y < 10; y++) {
@@ -95,38 +96,27 @@ function drawBoard() {
             const cell = document.createElement("div");
             cell.classList.add("cell");
 
-            let playerInCell = false;
-            Object.values(players).forEach(player => {                
-                if (player.x == x && player.y == y) {
-                    playerInCell = true;
-
+            // 🎯 表示中のマップのプレイヤーのみ描画
+            Object.values(players).forEach(player => {
+                if (player.mapID === viewingMapID && player.x === x && player.y === y) {
                     const playerElement = document.createElement("div");
                     playerElement.classList.add("player");
 
-                    let size = playerSizes[player.id] || "normal";
-                    playerElement.textContent = "■";
-
-                    if (size === "small") {
-                        playerElement.style.transform = "scale(0.5)";
-                    } else if (size === "big") {
-                        playerElement.style.transform = "scale(1.5)";
+                    if (player.id === userID) {
+                        playerElement.style.color = "blue"; // 自分は青
                     } else {
-                        playerElement.style.transform = "scale(1)";
+                        playerElement.style.color = "red"; // 他プレイヤーは赤
                     }
 
-                    playerElement.style.color = (player.token == currentPlayer.token) ? "blue" : "red";
                     cell.appendChild(playerElement);
                 }
             });
-
-            if (!playerInCell) {
-                cell.style.backgroundColor = "#ddd";
-            }
 
             board.appendChild(cell);
         }
     }
 }
+
 function updatePlayerData(callback) {
     fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID}`)
     .then(response => response.json())
