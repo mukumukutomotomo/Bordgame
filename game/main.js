@@ -101,6 +101,8 @@ fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID
         console.error("❌ プレイヤーデータ取得失敗:", data.error);
     }
 });
+
+
 function drawBoard() {
     const board = document.getElementById("board");
     board.innerHTML = "";
@@ -110,17 +112,16 @@ function drawBoard() {
             const cell = document.createElement("div");
             cell.classList.add("cell");
 
-            // 🎯 プレイヤーが表示中の `viewingMapID` にいるか確認
             Object.values(players).forEach(player => {
                 if (player.mapID === viewingMapID && player.x === x && player.y === y) {
                     const playerElement = document.createElement("div");
                     playerElement.classList.add("player");
-                    playerElement.textContent = player.username; // プレイヤー名を表示
+                    playerElement.textContent = player.username;
 
                     if (player.id === userID) {
-                        playerElement.style.backgroundColor = "blue"; // 自分のコマは青
+                        playerElement.style.backgroundColor = "blue";
                     } else {
-                        playerElement.style.backgroundColor = "red"; // 他プレイヤーのコマは赤
+                        playerElement.style.backgroundColor = "red";
                     }
 
                     cell.appendChild(playerElement);
@@ -157,12 +158,12 @@ function updatePlayerData(callback) {
 socket.on("updatePlayers", (data) => {
     console.log("📡 updatePlayers 受信:", data);
 
-    // データ形式が適切でない場合はエラー
     if (!data || !data.roomID || !Array.isArray(data.players)) {
         console.error("❌ updatePlayers のデータ形式が不正:", data);
         return;
     }
 
+    const roomData = data[`room_${roomID}`]; // 現在のルームのプレイヤーデータ
     players = {};
 
     data.players.forEach(player => {
@@ -178,6 +179,7 @@ socket.on("updatePlayers", (data) => {
     console.log("✅ players 更新完了:", players);
     drawBoard();
 });
+
 
 
 

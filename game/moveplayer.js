@@ -24,9 +24,10 @@ function movePlayer(steps) {
 
         let newX = data.currentPlayer.x;
         let newY = data.currentPlayer.y;
+        let newMapID = data.currentPlayer.mapID || viewingMapID; // ✅ mapID も考慮
         let playerID = data.currentPlayer.id || playerToken;
 
-        console.log(`📌 最新の座標取得: x=${newX}, y=${newY}, playerID=${playerID}`);
+        console.log(`📌 最新の座標取得: x=${newX}, y=${newY}, mapID=${newMapID}, playerID=${playerID}`);
 
         for (let i = 0; i < Math.abs(steps); i++) {
             if (steps > 0) {
@@ -48,12 +49,13 @@ function movePlayer(steps) {
             }
         }
 
-        console.log(`📌 新しい座標: x=${newX}, y=${newY}`);
+        console.log(`📌 新しい座標: x=${newX}, y=${newY}, mapID=${newMapID}`);
 
         const sendData = new URLSearchParams({
             token: playerToken,
             x: newX,
             y: newY,
+            mapID: newMapID, // ✅ mapID も送信
             room: roomID.replace("room_", "")
         });
 
@@ -69,16 +71,16 @@ function movePlayer(steps) {
                 console.log("✅ データベースにプレイヤー座標を保存:", saveData);
 
                 // 🎯 WebSocket でサーバーにプレイヤーの移動を通知
-                console.log(`📡 WebSocket 送信: movePlayer -> id=${playerID}, x=${newX}, y=${newY}, room=${roomID}`);
+                console.log(`📡 WebSocket 送信: movePlayer -> id=${playerID}, x=${newX}, y=${newY}, mapID=${newMapID}, room=${roomID}`);
                 socket.emit("movePlayer", {
                     id: playerID,
-                    token: playerToken,  // 🔥 サーバー側でデータベース更新するために `token` を送信
+                    token: playerToken,
                     x: newX,
                     y: newY,
+                    mapID: newMapID, // ✅ mapID をサーバーに送信
                     room: roomID
                 });
 
-                // 🎯 `session.php` から最新のプレイヤーデータを取得してから `drawBoard()`
                 updatePlayerData(drawBoard);
             }
         })
@@ -86,6 +88,7 @@ function movePlayer(steps) {
     })
     .catch(error => console.error("❌ session.php 取得エラー:", error));
 }
+
 
 // 🎯 WebSocket で `playerMoved` を受け取ったら `session.php` を取得
 socket.on("playerMoved", (data) => {
