@@ -105,7 +105,7 @@ io.on("connection", async (socket) => {
                 }, {});
 
                 console.log(`✅ ルーム ${data.room} の最新プレイヤーリスト更新`);
-                io.to(data.room).emit("updatePlayers", Object.values(rooms[data.room]));
+                io.to(data.room).emit("updatePlayers", { roomID: data.room, players: Object.values(rooms[data.room]) });
                 io.to(data.room).emit("startGame");
             } else {
                 console.error(`❌ ルーム ${data.room} のプレイヤーデータ取得失敗:`, response.data.error);

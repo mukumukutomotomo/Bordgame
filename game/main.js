@@ -170,6 +170,7 @@ socket.on("startGame", () => {
     board.style.display = "grid";
     drawBoard(); 
 });
+
 function changeMap(mapId) {
     const maps = document.querySelectorAll(".map");
 
