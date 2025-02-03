@@ -1,20 +1,35 @@
+const corsOptions = {
+    origin: ["https://tohru-portfolio.secret.jp"], // ✅ 許可するドメインを指定
+    methods: ["GET", "POST"], // ✅ 許可する HTTP メソッド
+    allowedHeaders: ["Content-Type"], // ✅ 許可するヘッダー
+    credentials: true // ✅ Cookie や認証情報を許可
+};
+
+app.use(cors(corsOptions));
+
+const io = socketIo(server, {
+    cors: {
+        origin: "https://tohru-portfolio.secret.jp", // ✅ WebSocket の CORS 設定
+        methods: ["GET", "POST"]
+    }
+});
+
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
 const axios = require("axios");
-const cors = require("cors");
-
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, { cors: { origin: "*" } });
 
-app.use(cors()); // CORS 設定
 const LOLLIPOP_API = "https://tohru-portfolio.secret.jp/bordgame/game/session.php";
 let rooms = {}; // ルームごとのプレイヤーデータ { roomID: { playerID: {...} } }
 
 // 🔹 WebSocket接続時の処理
 io.on("connection", async (socket) => {
     console.log(`✅ 新しいプレイヤーが接続: ${socket.id}`);
+
+    socket.handshake.headers["Access-Control-Allow-Origin"] = "https://tohru-portfolio.secret.jp";
+    socket.handshake.headers["Access-Control-Allow-Credentials"] = "true";
 
     // 🎯 クライアントをルームに参加させる
     socket.on("joinRoom", (data) => {

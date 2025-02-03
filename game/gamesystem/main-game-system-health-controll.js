@@ -19,6 +19,7 @@ function loadHP() {
 
 // ハートアイコンを表示する関数
 function updateHearts(hp) {
+    console.log("HPを表示させます");
     let hpContainer = document.getElementById("hp-container");
     hpContainer.innerHTML = ""; // 一旦クリア
 

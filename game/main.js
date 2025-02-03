@@ -1,4 +1,8 @@
-const socket = io("https://bordgame.onrender.com");
+const socket = io("https://bordgame.onrender.com", {
+    transports: ["websocket"], 
+    withCredentials: true 
+});
+
 function getParamFromURL(param) {
     const params = new URLSearchParams(window.location.search);
     return params.get(param);
