@@ -18,11 +18,13 @@ io.on("connection", async (socket) => {
 
     // 🎯 クライアントをルームに参加させる
     socket.on("joinRoom", (data) => {
+        console.log("📡 joinRoom 受信データ:", data);
+    
         if (!data.room || !data.playerID || !data.mapID) {
             console.error("❌ 無効な joinRoom データ:", data);
             return;
         }
-
+    
         socket.join(data.room);
 
         if (!rooms[data.room]) {

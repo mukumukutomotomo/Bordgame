@@ -23,11 +23,22 @@ if (roomID) {
 }
 socket.on("connect", () => {
     console.log("✅ WebSocket 接続成功");
+    console.log("📡 joinRoom 送信データ:", {
+        room: roomID,
+        playerID: userID,
+        mapID: "map-01"
+    });
+
     if (roomID) {
         console.log(`🔗 WebSocket 経由でルーム ${roomID} に参加`);
-        socket.emit("joinRoom", roomID);
+        socket.emit("joinRoom", {
+            room: roomID,
+            playerID: userID,
+            mapID: "map-01"
+        });        
     }
 });
+
 
 
 // 🎯 プレイヤー情報
@@ -149,17 +160,16 @@ socket.on("playerMoved", (data) => {
 socket.on("updatePlayers", (data) => {
     console.log("📡 updatePlayers 受信:", data);
 
-    if (!Array.isArray(data)) {
-        console.error("❌ updatePlayers のデータ形式が不正です:", data);
+    if (!data || !data.players) {
+        console.error("❌ updatePlayers のデータ形式が不正:", data);
         return;
     }
+
+    // `players` を適切に更新
     players = {};
-    data.forEach(player => {
-        if (player && player.id) {
-            players[player.id] = player;
-        }
+    data.players.forEach(player => {
+        players[player.id] = player;
     });
-    console.log("✅ 更新後の players:", players);
 });
 
 
