@@ -56,8 +56,14 @@ io.on("connection", async (socket) => {
         };
     
         console.log(`✅ ルーム ${data.room} にプレイヤー ${data.playerID} を登録 (マップ: ${data.mapID})`);
-        io.to(data.room).emit("updatePlayers", Object.values(rooms[data.room]));
-    });    
+        
+        // 🔹 updatePlayers のデータ形式を統一
+        io.to(data.room).emit("updatePlayers", {
+            roomID: data.room,
+            players: Object.values(rooms[data.room])
+        });
+    });
+    
 
     // 🎯 プレイヤーがマップの表示を変更（ただし移動はしない）
     socket.on("viewMap", (data) => {
@@ -109,20 +115,26 @@ io.on("connection", async (socket) => {
             console.error("❌ ルームIDが指定されていません");
             return;
         }
-
+    
         console.log(`🎮 ルーム ${data.room} でゲーム開始`);
-
+    
         try {
             const response = await axios.get(`${LOLLIPOP_API}?room=${data.room}&token=SERVER_ADMIN_TOKEN`);
-
+    
             if (response.data.success) {
                 rooms[data.room] = response.data.players.reduce((acc, player) => {
                     acc[player.id] = { ...player, socketId: null };
                     return acc;
                 }, {});
-
+    
                 console.log(`✅ ルーム ${data.room} の最新プレイヤーリスト更新`);
-                io.to(data.room).emit("updatePlayers", { roomID: data.room, players: Object.values(rooms[data.room]) });
+                
+                // 🔹 updatePlayers のデータ形式を統一
+                io.to(data.room).emit("updatePlayers", {
+                    roomID: data.room,
+                    players: Object.values(rooms[data.room])
+                });
+    
                 io.to(data.room).emit("startGame");
             } else {
                 console.error(`❌ ルーム ${data.room} のプレイヤーデータ取得失敗:`, response.data.error);
@@ -131,6 +143,7 @@ io.on("connection", async (socket) => {
             console.error(`❌ session.php データ取得エラー:`, error.message);
         }
     });
+    
 
     // 🎯 カード取得処理
     socket.on("receiveCard", async (data) => {

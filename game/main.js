@@ -154,35 +154,29 @@ function updatePlayerData(callback) {
 
 
 
-socket.on("playerMoved", (data) => {
-    console.log(`📡 WebSocket 受信: playerMoved -> id=${data.id}, x=${data.x}, y=${data.y}`);
-    updatePlayerData(() => {
-        console.log(`📌 playerMoved: ID=${data.id} の更新後に drawBoard() を実行`);
-        drawBoard();
-    });
-});
-
 socket.on("updatePlayers", (data) => {
     console.log("📡 updatePlayers 受信:", data);
 
-    if (!data || !data.players) {
+    // データ形式が適切でない場合はエラー
+    if (!data || !data.roomID || !Array.isArray(data.players)) {
         console.error("❌ updatePlayers のデータ形式が不正:", data);
         return;
     }
 
-    // 🎯 `players` オブジェクトを更新（mapIDも含める）
     players = {};
+
     data.players.forEach(player => {
         players[player.id] = {
             id: player.id,
             username: player.username,
             x: player.x,
             y: player.y,
-            mapID: player.mapID || "map-01" // ✅ `mapID` をデフォルト "map-01" にする
+            mapID: player.mapID || "map-01"
         };
     });
 
-    drawBoard(); // ✅ `players` 更新後に再描画
+    console.log("✅ players 更新完了:", players);
+    drawBoard();
 });
 
 
