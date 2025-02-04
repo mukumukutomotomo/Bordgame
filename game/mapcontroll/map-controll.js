@@ -1,21 +1,73 @@
 let currentMapID = "map-01"; // 実際に自分がいるマップ
 let viewingMapID = "map-01"; // 表示しているマップ（変更可能）
 
-function changeMap(mapId) {
-    viewingMapID = mapId; // ✅ 表示中のマップを変更
-    console.log(`📌 マップ切り替え: ${mapId} (現在地: ${currentMapID})`);
+// マップの背景変更関数
+function changeMap(mapID) {
+    console.log("🗺️ マップ切り替え:", mapID);
 
-    // 🎯 WebSocket で表示するマップのデータを取得
+    // 現在のアクティブなマップとボードを取得
+    const currentMap = document.querySelector(".map.active");
+    const newMap = document.getElementById(mapID);
+    const board = document.getElementById("board"); // ボードの取得
+
+    if (!newMap) {
+        console.warn("⚠️ 指定されたマップIDが存在しません:", mapID);
+        return;
+    }
+
+    if (currentMap === newMap) {
+        console.log("🔄 すでに選択されているマップです:", mapID);
+        return;
+    }
+
+    // 🎯 ボードのマップを変更 (WebSocket 経由でサーバーに通知)
+    viewingMapID = mapID;
+    console.log(`📌 ボード切り替え: ${mapID} (現在地: ${currentMapID})`);
+
     socket.emit("viewMap", {
         room: roomID,
         playerID: userID,
-        mapID: mapId,
+        mapID: mapID,
         token: playerToken,
     });
 
-    // 🎯 マップ切り替え発動時のログ
-    console.log(`🛠️ マップ切り替え発動: ${mapId}`);
+    console.log(`🛠️ マップ切り替え発動: ${mapID}`);
+
+    // ① マップとボードを同時にフェードアウト (0.5秒かけて透明に)
+    let opacity = 1;
+    let fadeOut = setInterval(() => {
+        opacity -= 0.05;
+        currentMap.style.opacity = opacity;
+        board.style.opacity = opacity; // ボードもフェードアウト
+
+        if (opacity <= 0) {
+            clearInterval(fadeOut);
+            currentMap.classList.remove("active");
+            currentMap.style.display = "none";
+            board.style.display = "none"; // ボードも非表示
+
+            // ② 次のマップとボードを準備
+            newMap.style.display = "block";
+            newMap.style.opacity = 0; // 最初は透明
+            board.style.display = "block"; // ボードも表示
+            board.style.opacity = 0; // 透明で開始
+
+            // ③ フェードイン (0.5秒かけて徐々に表示)
+            let fadeIn = setInterval(() => {
+                opacity += 0.05;
+                newMap.style.opacity = opacity;
+                board.style.opacity = opacity; // ボードもフェードイン
+
+                if (opacity >= 1) {
+                    clearInterval(fadeIn);
+                    newMap.classList.add("active");
+                    console.log("✅ マップ & ボード変更完了:", mapID);
+                }
+            }, 50);
+        }
+    }, 50);
 }
+
 
 // 🎯 サーバーから指定マップのプレイヤーデータを受信
 socket.on("updateViewMap", (data) => {
@@ -133,3 +185,5 @@ document.addEventListener("DOMContentLoaded", function () {
         mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
     }
 });
+
+
