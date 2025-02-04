@@ -22,14 +22,15 @@ socket.on("updateViewMap", (data) => {
         players[player.id] = {
             id: player.id,
             username: player.username,
-            x: player.x,
-            y: player.y,
+            x: player.x,   // ✅ 追加
+            y: player.y,   // ✅ 追加
             mapID: player.mapID
         };
     });
 
     drawBoard(); // ✅ 変更後のプレイヤー情報で再描画
 });
+
 
 
 document.addEventListener("DOMContentLoaded", function () {

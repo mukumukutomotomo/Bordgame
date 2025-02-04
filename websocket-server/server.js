@@ -67,8 +67,6 @@ io.on("connection", async (socket) => {
         });
     });
     
-
-    // 🎯 プレイヤーがマップの表示を変更（ただし移動はしない）
     socket.on("viewMap", (data) => {
         if (!data.room || !data.playerID || !data.mapID) {
             console.error("❌ 無効な viewMap データ:", data);
@@ -77,10 +75,20 @@ io.on("connection", async (socket) => {
 
         console.log(`👀 プレイヤー ${data.playerID} がマップ ${data.mapID} を閲覧`);
         
-        // 🎯 指定マップのプレイヤーデータを送信
-        const filteredPlayers = Object.values(rooms[data.room]).filter(p => p.mapID === data.mapID);
+        // 🎯 指定マップのプレイヤーデータを送信（x / y も含める）
+        const filteredPlayers = Object.values(rooms[data.room])
+            .filter(p => p.mapID === data.mapID)
+            .map(p => ({
+                id: p.id,
+                username: p.username,
+                x: p.x,       // ✅ 追加
+                y: p.y,       // ✅ 追加
+                mapID: p.mapID
+            }));
+
         socket.emit("updateViewMap", { mapID: data.mapID, players: filteredPlayers });
     });
+
 
     // 🎯 プレイヤー移動処理
     socket.on("movePlayer", (data) => {
