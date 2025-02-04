@@ -38,7 +38,7 @@ if ($stmt->rowCount() === 0) {
 try {
     if (empty($token) || $token === $serverAdminToken) {
         // 🎯 サーバーからのリクエスト（`startGame`）：全プレイヤーを取得
-        $stmt = $pdo->query("SELECT id, username, token, x, y FROM `$roomID`");
+        $stmt = $pdo->query("SELECT id, username, token, x, y, mapID FROM `$roomID`"); // ✅ mapID を追加
         $players = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         echo json_encode([
@@ -49,7 +49,7 @@ try {
     }
 
     // 🎯 通常のプレイヤーリクエスト（`token` に対応するプレイヤーを取得）
-    $stmt = $pdo->prepare("SELECT id, username, token, x, y FROM `$roomID` WHERE token = :token");
+    $stmt = $pdo->prepare("SELECT id, username, token, x, y, mapID FROM `$roomID` WHERE token = :token"); // ✅ mapID を追加
     $stmt->bindParam(":token", $token, PDO::PARAM_STR);
     $stmt->execute();
     $currentPlayer = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -60,7 +60,7 @@ try {
     }
 
     // 🎯 ルーム内の全プレイヤーを取得
-    $stmt = $pdo->query("SELECT id, username, token, x, y FROM `$roomID`");
+    $stmt = $pdo->query("SELECT id, username, token, x, y, mapID FROM `$roomID`"); // ✅ mapID を追加
     $players = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([

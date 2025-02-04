@@ -88,18 +88,28 @@ io.on("connection", async (socket) => {
             console.error("❌ movePlayer に無効なデータ:", data);
             return;
         }
+    
         let player = rooms[data.room][data.playerID];
         player.x = data.x;
         player.y = data.y;
-
-        console.log(`🔄 ルーム ${data.room} - プレイヤー ${data.playerID} 移動: x=${data.x}, y=${data.y}`);
-        io.to(data.room).emit("playerMoved", { id: data.playerID, x: data.x, y: data.y });
-
-        // 🎯 データベースに移動後の座標を保存
+        player.mapID = data.mapID; // ✅ mapID も更新
+    
+        console.log(`🔄 ルーム ${data.room} - プレイヤー ${data.playerID} 移動: x=${data.x}, y=${data.y}, mapID=${data.mapID}`);
+        
+        // 🎯 WebSocket でクライアントに通知（mapID も含める）
+        io.to(data.room).emit("playerMoved", { 
+            id: data.playerID, 
+            x: data.x, 
+            y: data.y, 
+            mapID: data.mapID // ✅ mapID を送信
+        });
+    
+        // 🎯 データベースに移動後の座標と mapID を保存
         axios.post("https://tohru-portfolio.secret.jp/bordgame/game/update_position.php", new URLSearchParams({
             token: data.token,
             x: data.x,
             y: data.y,
+            mapID: data.mapID, // ✅ mapID も送信
             room: data.room
         }).toString(), {
             headers: { "Content-Type": "application/x-www-form-urlencoded" }
@@ -107,11 +117,11 @@ io.on("connection", async (socket) => {
             if (!response.data.success) {
                 console.error("❌ データベース更新失敗:", response.data.error);
             } else {
-                console.log("✅ データベースにプレイヤー座標を保存:", response.data);
+                console.log("✅ データベースにプレイヤー座標とマップIDを保存:", response.data);
             }
         }).catch(error => console.error("❌ update_position.php 取得エラー:", error));
     });
-
+    
     // 🎯 ゲーム開始処理
     socket.on("startGame", async (data) => {
         if (!data.room) {

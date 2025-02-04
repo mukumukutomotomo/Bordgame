@@ -102,7 +102,6 @@ fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID
     }
 });
 
-
 function drawBoard() {
     const board = document.getElementById("board");
     board.innerHTML = "";
@@ -113,6 +112,7 @@ function drawBoard() {
             cell.classList.add("cell");
 
             Object.values(players).forEach(player => {
+                // ✅ 自分が見ているマップと同じマップにいるプレイヤーのみ表示
                 if (player.mapID === viewingMapID && player.x === x && player.y === y) {
                     const playerElement = document.createElement("div");
                     playerElement.classList.add("player");
@@ -132,7 +132,6 @@ function drawBoard() {
         }
     }
 }
-
 
 function updatePlayerData(callback) {
     fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID}`)

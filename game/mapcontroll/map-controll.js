@@ -2,7 +2,7 @@ let currentMapID = "map-01"; // 実際に自分がいるマップ
 let viewingMapID = "map-01"; // 表示しているマップ（変更可能）
 
 function changeMap(mapId) {
-    viewingMapID = mapId; // 表示中のマップを変更
+    viewingMapID = mapId; // ✅ 表示中のマップを変更
     console.log(`📌 マップ切り替え: ${mapId} (現在地: ${currentMapID})`);
 
     // 🎯 WebSocket で表示するマップのデータを取得

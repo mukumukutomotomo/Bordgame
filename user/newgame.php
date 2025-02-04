@@ -15,6 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             username VARCHAR(50) NOT NULL,
             x INT DEFAULT 0,
             y INT DEFAULT 0,
+            mapID VARCHAR(20) NOT NULL DEFAULT 'map-01', -- ✅ 追加: プレイヤーのいるマップを記録
             hp INT DEFAULT 10 CHECK (hp BETWEEN 0 AND 10),
             token VARCHAR(32) UNIQUE NOT NULL,
             playersize ENUM('small', 'normal', 'big') DEFAULT 'normal',
@@ -26,7 +27,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             Card_ID_006 BOOLEAN DEFAULT FALSE,
             Card_ID_007 BOOLEAN DEFAULT FALSE,
             Card_ID_008 BOOLEAN DEFAULT FALSE
-        )";
+        )";        
         $pdo->exec($sql);
 
         echo json_encode(["success" => true, "roomID" => $roomID]);
