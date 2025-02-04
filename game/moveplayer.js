@@ -92,6 +92,18 @@ function movePlayer(steps) {
 
 // 🎯 WebSocket で `playerMoved` を受け取ったら `session.php` を取得
 socket.on("playerMoved", (data) => {
-    console.log(`📡 WebSocket 受信: playerMoved -> id=${data.id}, x=${data.x}, y=${data.y}`);
-    updatePlayerData(drawBoard);
+    console.log("📡 WebSocket 受信: playerMoved", data);
+
+    if (!players[data.id]) {
+        console.warn(`⚠️ 受信したプレイヤー ${data.id} が players に存在しない`);
+    }
+
+    players[data.id] = {
+        ...players[data.id],
+        x: data.x,
+        y: data.y,
+        mapID: data.mapID
+    };
+    console.log(`📌 更新後のプレイヤーデータ:`, players);
+    drawBoard();
 });

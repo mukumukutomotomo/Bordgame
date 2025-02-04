@@ -37,14 +37,14 @@ io.on("connection", async (socket) => {
     // 🎯 クライアントをルームに参加させる
     socket.on("joinRoom", (data) => {
         console.log("📡 joinRoom 受信:", data);
-    
+        
         if (!data.room || !data.playerID || !data.mapID) {
             console.error("❌ 無効な joinRoom データ:", data);
             return;
         }
     
         socket.join(data.room);
-    
+        
         if (!rooms[data.room]) {
             rooms[data.room] = {};
         }
@@ -58,14 +58,15 @@ io.on("connection", async (socket) => {
             socketId: socket.id,
         };
     
-        console.log(`✅ ルーム ${data.room} にプレイヤー ${data.playerID} を登録 (マップ: ${data.mapID})`);
+        console.log(`✅ ルーム ${data.room} にプレイヤー ${data.playerID} を登録`);
+        console.log("📌 現在の rooms:", JSON.stringify(rooms, null, 2));
         
-        // 🔹 updatePlayers のデータ形式を統一
         io.to(data.room).emit("updatePlayers", {
             roomID: data.room,
             players: Object.values(rooms[data.room])
         });
     });
+    
 // 🎯 プレイヤーがマップの表示を変更（ただし移動はしない）
 socket.on("viewMap", async (data) => {
     if (!data.room || !data.playerID || !data.mapID) {
@@ -108,16 +109,56 @@ socket.on("viewMap", async (data) => {
 
 
     // 🎯 プレイヤー移動処理
-    socket.on("movePlayer", (data) => {
-        if (!data.room || !data.playerID || !rooms[data.room] || !rooms[data.room][data.playerID]) {
-            console.error("❌ movePlayer に無効なデータ:", data);
-            return;
+    socket.on("movePlayer", async (data) => {
+        console.log("📡 movePlayer 受信:", data);
+    
+        // 🔍 rooms にプレイヤーが登録されているか確認
+        if (!rooms[data.room] || !rooms[data.room][data.playerID]) {
+            console.warn(`⚠️ rooms にプレイヤー ${data.playerID} が存在しません。session.php から再取得を試みます`);
+    
+            try {
+                // 🎯 session.php から最新のプレイヤーデータを取得
+                const response = await axios.post(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${data.room}`, 
+                    new URLSearchParams({ token: data.token }).toString(), {
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" }
+                });
+    
+                if (!response.data.success) {
+                    console.error("❌ session.php からのデータ取得に失敗:", response.data.error);
+                    return;
+                }
+    
+                // 🎯 rooms を最新データで更新
+                rooms[data.room] = {};
+                response.data.players.forEach(player => {
+                    rooms[data.room][player.id] = {
+                        id: player.id,
+                        username: player.username,
+                        x: player.x,
+                        y: player.y,
+                        mapID: player.mapID,
+                        socketId: null
+                    };
+                });
+    
+                console.log(`✅ サーバーの rooms[${data.room}] を最新データに更新:`, rooms[data.room]);
+    
+                // 🔍 まだプレイヤーが rooms に存在しないならエラー
+                if (!rooms[data.room][data.playerID]) {
+                    console.error(`❌ プレイヤー ${data.playerID} が session.php にも存在しません`);
+                    return;
+                }
+            } catch (error) {
+                console.error("❌ session.php 取得エラー:", error.message);
+                return;
+            }
         }
     
+        // 🔹 ここまで来たら、rooms[data.room] にプレイヤーがいるはず
         let player = rooms[data.room][data.playerID];
         player.x = data.x;
         player.y = data.y;
-        player.mapID = data.mapID; // ✅ mapID も更新
+        player.mapID = data.mapID; 
     
         console.log(`🔄 ルーム ${data.room} - プレイヤー ${data.playerID} 移動: x=${data.x}, y=${data.y}, mapID=${data.mapID}`);
         
@@ -126,7 +167,7 @@ socket.on("viewMap", async (data) => {
             id: data.playerID, 
             x: data.x, 
             y: data.y, 
-            mapID: data.mapID // ✅ mapID を送信
+            mapID: data.mapID
         });
     
         // 🎯 データベースに移動後の座標と mapID を保存
@@ -134,7 +175,7 @@ socket.on("viewMap", async (data) => {
             token: data.token,
             x: data.x,
             y: data.y,
-            mapID: data.mapID, // ✅ mapID も送信
+            mapID: data.mapID,
             room: data.room
         }).toString(), {
             headers: { "Content-Type": "application/x-www-form-urlencoded" }
@@ -146,6 +187,7 @@ socket.on("viewMap", async (data) => {
             }
         }).catch(error => console.error("❌ update_position.php 取得エラー:", error));
     });
+    
     
     // 🎯 ゲーム開始処理
     socket.on("startGame", async (data) => {

@@ -9,7 +9,8 @@ function changeMap(mapId) {
     socket.emit("viewMap", {
         room: roomID,
         playerID: userID,
-        mapID: mapId
+        mapID: mapId,
+        token: playerToken,
     });
 
     // 🎯 マップ切り替え発動時のログ

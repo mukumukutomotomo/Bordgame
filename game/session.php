@@ -56,8 +56,18 @@ try {
 
     if (!$currentPlayer) {
         echo json_encode(["success" => false, "error" => "認証エラー: トークンが一致するプレイヤーが見つかりません"]);
+        // `token` の状態をログに出力
+        if (!isset($_POST['token'])) {
+            error_log("❌ token が送信されていない（未定義）");
+        } elseif (empty($_POST['token'])) { // `false`, `""`, `0`, `null` も含める
+            error_log("⚠️ token が空または無効（false / 空文字 / 0 / null）: " . var_export($_POST['token'], true));
+        } else {
+            error_log("📌 受け取った token: " . $_POST['token']);
+        }
+    
         exit;
     }
+    
 
     // 🎯 ルーム内の全プレイヤーを取得
     $stmt = $pdo->query("SELECT id, username, token, x, y, mapID FROM `$roomID`"); // ✅ mapID を追加
