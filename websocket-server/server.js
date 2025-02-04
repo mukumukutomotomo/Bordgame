@@ -66,28 +66,44 @@ io.on("connection", async (socket) => {
             players: Object.values(rooms[data.room])
         });
     });
-    
-    socket.on("viewMap", (data) => {
-        if (!data.room || !data.playerID || !data.mapID) {
-            console.error("❌ 無効な viewMap データ:", data);
+// 🎯 プレイヤーがマップの表示を変更（ただし移動はしない）
+socket.on("viewMap", async (data) => {
+    if (!data.room || !data.playerID || !data.mapID) {
+        console.error("❌ 無効な viewMap データ:", data);
+        return;
+    }
+    console.log(`👀 プレイヤー ${data.playerID} がマップ ${data.mapID} を閲覧`);
+    try {
+        const response = await axios.post(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${data.room}`, 
+            new URLSearchParams({ token: data.token }).toString(), {
+            headers: { "Content-Type": "application/x-www-form-urlencoded" }
+        });
+
+        if (!response.data.success) {
+            console.error("❌ session.php からのデータ取得に失敗:", response.data.error);
             return;
         }
+        rooms[data.room] = {};
+        response.data.players.forEach(player => {
+            rooms[data.room][player.id] = {
+                id: player.id,
+                username: player.username,
+                x: player.x,
+                y: player.y,
+                mapID: player.mapID
+            };
+        });
 
-        console.log(`👀 プレイヤー ${data.playerID} がマップ ${data.mapID} を閲覧`);
-        
-        // 🎯 指定マップのプレイヤーデータを送信（x / y も含める）
-        const filteredPlayers = Object.values(rooms[data.room])
-            .filter(p => p.mapID === data.mapID)
-            .map(p => ({
-                id: p.id,
-                username: p.username,
-                x: p.x,       // ✅ 追加
-                y: p.y,       // ✅ 追加
-                mapID: p.mapID
-            }));
+        console.log(`✅ サーバーの rooms[${data.room}] を最新データに更新`, rooms[data.room]);
 
+        // 🎯 指定マップのプレイヤーデータを送信
+        const filteredPlayers = Object.values(rooms[data.room]).filter(p => p.mapID === data.mapID);
         socket.emit("updateViewMap", { mapID: data.mapID, players: filteredPlayers });
-    });
+
+    } catch (error) {
+        console.error("❌ session.php 取得エラー:", error.message);
+    }
+});
 
 
     // 🎯 プレイヤー移動処理

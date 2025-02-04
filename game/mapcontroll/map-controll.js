@@ -11,6 +11,9 @@ function changeMap(mapId) {
         playerID: userID,
         mapID: mapId
     });
+
+    // 🎯 マップ切り替え発動時のログ
+    console.log(`🛠️ マップ切り替え発動: ${mapId}`);
 }
 
 // 🎯 サーバーから指定マップのプレイヤーデータを受信
@@ -28,8 +31,19 @@ socket.on("updateViewMap", (data) => {
         };
     });
 
+    // 🎯 `currentMapID` を更新（実際にいるマップを正しく保持）
+    if (players[userID]) {
+        currentMapID = players[userID].mapID;
+    }
+
+    console.log(`📌 マップ ${data.mapID} 内のプレイヤー:`);
+    Object.values(players).forEach(player => {
+        console.log(`   🧑‍💻 ${player.username} (ID: ${player.id}) → x: ${player.x}, y: ${player.y}, mapID: ${player.mapID}`);
+    });
+
     drawBoard(); // ✅ 変更後のプレイヤー情報で再描画
 });
+
 
 
 
