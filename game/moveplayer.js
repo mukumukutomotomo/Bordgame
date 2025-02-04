@@ -25,7 +25,7 @@ function movePlayer(steps) {
         let newX = data.currentPlayer.x;
         let newY = data.currentPlayer.y;
         let newMapID = data.currentPlayer.mapID || viewingMapID; // ✅ mapID も考慮
-        let playerID = data.currentPlayer.id || playerToken;
+        let playerID = data.currentPlayer.username || playerToken;
 
         console.log(`📌 最新の座標取得: x=${newX}, y=${newY}, mapID=${newMapID}, playerID=${playerID}`);
 
@@ -71,9 +71,16 @@ function movePlayer(steps) {
                 console.log("✅ データベースにプレイヤー座標を保存:", saveData);
 
                 // 🎯 WebSocket でサーバーにプレイヤーの移動を通知
-                console.log(`📡 WebSocket 送信: movePlayer -> id=${playerID}, x=${newX}, y=${newY}, mapID=${newMapID}, room=${roomID}`);
+                console.log("📡 movePlayer 送信データ:", {
+                    id: currentPlayer.id,  
+                    token: playerToken,
+                    x: newX,
+                    y: newY,
+                    mapID: newMapID,
+                    room: roomID
+                });
                 socket.emit("movePlayer", {
-                    id: playerID,
+                    id: currentPlayer.id,
                     token: playerToken,
                     x: newX,
                     y: newY,

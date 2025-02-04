@@ -64,7 +64,6 @@ fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID
 .then(response => response.json())
 .then(data => {
     console.log("📌 session.php のレスポンス:", data);
-
     if (data.success) {
         players = {};
         playerSizes = {}; 

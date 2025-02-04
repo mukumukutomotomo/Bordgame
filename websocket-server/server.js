@@ -38,8 +38,8 @@ io.on("connection", async (socket) => {
     socket.on("joinRoom", (data) => {
         console.log("📡 joinRoom 受信:", data);
         
-        if (!data.room || !data.playerID || !data.mapID) {
-            console.error("❌ 無効な joinRoom データ:", data);
+        if (!data.room || !data.playerID) {
+            console.error("❌ joinRoom に無効なデータ:", data);
             return;
         }
     
@@ -58,9 +58,7 @@ io.on("connection", async (socket) => {
             socketId: socket.id,
         };
     
-        console.log(`✅ ルーム ${data.room} にプレイヤー ${data.playerID} を登録`);
-        console.log("📌 現在の rooms:", JSON.stringify(rooms, null, 2));
-        
+        console.log("✅ 現在の rooms:", JSON.stringify(rooms, null, 2));
         io.to(data.room).emit("updatePlayers", {
             roomID: data.room,
             players: Object.values(rooms[data.room])
