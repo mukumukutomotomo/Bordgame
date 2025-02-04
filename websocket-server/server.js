@@ -110,12 +110,10 @@ socket.on("viewMap", async (data) => {
     socket.on("movePlayer", async (data) => {
         console.log("📡 movePlayer 受信:", data);
     
-        // 🔍 rooms にプレイヤーが登録されているか確認
-        if (!rooms[data.room] || !rooms[data.room][data.playerID]) {
-            console.warn(`⚠️ rooms にプレイヤー ${data.playerID} が存在しません。session.php から再取得を試みます`);
+        if (!rooms[data.room] || !rooms[data.room][data.id]) {
+            console.warn(`⚠️ rooms にプレイヤー ${data.id} が存在しません。session.php から再取得を試みます`);
     
             try {
-                // 🎯 session.php から最新のプレイヤーデータを取得
                 const response = await axios.post(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${data.room}`, 
                     new URLSearchParams({ token: data.token }).toString(), {
                     headers: { "Content-Type": "application/x-www-form-urlencoded" }
@@ -126,7 +124,7 @@ socket.on("viewMap", async (data) => {
                     return;
                 }
     
-                // 🎯 rooms を最新データで更新
+                // ✅ `rooms` を更新
                 rooms[data.room] = {};
                 response.data.players.forEach(player => {
                     rooms[data.room][player.id] = {
@@ -141,28 +139,29 @@ socket.on("viewMap", async (data) => {
     
                 console.log(`✅ サーバーの rooms[${data.room}] を最新データに更新:`, rooms[data.room]);
     
-                // 🔍 まだプレイヤーが rooms に存在しないならエラー
-                if (!rooms[data.room][data.playerID]) {
-                    console.error(`❌ プレイヤー ${data.playerID} が session.php にも存在しません`);
-                    return;
-                }
+                // 🔹 再取得後に `movePlayer` の処理を続ける
             } catch (error) {
                 console.error("❌ session.php 取得エラー:", error.message);
                 return;
             }
         }
     
-        // 🔹 ここまで来たら、rooms[data.room] にプレイヤーがいるはず
-        let player = rooms[data.room][data.playerID];
+        // ✅ `rooms` にプレイヤーが登録されているはず
+        let player = rooms[data.room][data.id];
+        if (!player) {
+            console.error(`❌ movePlayer の処理継続失敗: プレイヤー ${data.id} が rooms に存在しません`);
+            return;
+        }
+    
         player.x = data.x;
         player.y = data.y;
-        player.mapID = data.mapID; 
+        player.mapID = data.mapID;
     
-        console.log(`🔄 ルーム ${data.room} - プレイヤー ${data.playerID} 移動: x=${data.x}, y=${data.y}, mapID=${data.mapID}`);
-        
+        console.log(`🔄 ルーム ${data.room} - プレイヤー ${data.id} 移動: x=${data.x}, y=${data.y}, mapID=${data.mapID}`);
+    
         // 🎯 WebSocket でクライアントに通知（mapID も含める）
         io.to(data.room).emit("playerMoved", { 
-            id: data.playerID, 
+            id: data.id, 
             x: data.x, 
             y: data.y, 
             mapID: data.mapID
