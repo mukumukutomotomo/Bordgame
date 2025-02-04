@@ -74,6 +74,7 @@ socket.on("viewMap", async (data) => {
     }
     console.log(`👀 プレイヤー ${data.playerID} がマップ ${data.mapID} を閲覧`);
     try {
+        console.log("📌 送信する token:", data.token);
         const response = await axios.post(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${data.room}`, 
             new URLSearchParams({ token: data.token }).toString(), {
             headers: { "Content-Type": "application/x-www-form-urlencoded" }
