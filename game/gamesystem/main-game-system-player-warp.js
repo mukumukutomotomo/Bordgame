@@ -109,8 +109,22 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // **プレイヤー移動を監視**
-    document.addEventListener("playerMoved", function (event) {
-        const player = event.detail;
-        checkPlayerWarp(player);
+    socket.on("playerMoved", (data) => {
+        console.log(`📡 プレイヤー移動検知: ID=${data.id}, x=${data.x}, y=${data.y}`);
+
+        // 🎯 `window.userID` を確実に数値型に統一
+        window.userID = Number(window.userID);
+        data.id = Number(data.id);
+
+        console.log("🔍 `data.id` の値:", data.id, " (型: " + typeof data.id + ")");
+        console.log("🔍 `window.userID` の値:", window.userID, " (型: " + typeof window.userID + ")");
+
+        // 🎯 自分の移動だけチェック
+        if (data.id === window.userID) {
+            console.log("✅ 自分の移動イベントなので処理を実行");
+            checkPlayerWarp(data);
+        } else {
+            console.log("🚫 他プレイヤーの移動イベントなので処理しない");
+        }
     });
 });
