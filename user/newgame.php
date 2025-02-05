@@ -27,7 +27,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             Card_ID_006 BOOLEAN DEFAULT FALSE,
             Card_ID_007 BOOLEAN DEFAULT FALSE,
             Card_ID_008 BOOLEAN DEFAULT FALSE,
-            -- ✅ カードの所持数を追加
             Card_ID_009 INT DEFAULT 0 CHECK (Card_ID_009 >= 0),
             Card_ID_010 INT DEFAULT 0 CHECK (Card_ID_010 >= 0),
             Card_ID_011 INT DEFAULT 0 CHECK (Card_ID_011 >= 0),

@@ -103,10 +103,16 @@ document.addEventListener("DOMContentLoaded", function () {
     // **他プレイヤーのワープを適用**
     socket.on("playerWarped", function (data) {
         console.log(`🔄 他プレイヤー (${data.playerID}) がワープ: ${data.newMapID}`);
-        if (data.playerID !== userID) {
+
+        // **自分がワープした場合のみ盤面を変更**
+        if (data.playerID === userID) {
+            console.log("✅ 自分のワープなので盤面を変更");
             changeMap(data.newMapID);
+        } else {
+            console.log("🚫 他プレイヤーのワープなので盤面は変更しない");
         }
     });
+
 
     // **プレイヤー移動を監視**
     socket.on("playerMoved", (data) => {
