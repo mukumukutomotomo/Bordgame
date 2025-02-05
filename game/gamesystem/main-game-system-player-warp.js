@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(response => response.json())
         .then(data => {
             if (!data.success) {
-                console.error("❌ データベース更新失敗:", data.error);
+                console.error("warp_playerから❌ データベース更新失敗:", data.error);
                 return;
             }
             console.log("✅ データベース更新成功:", data);

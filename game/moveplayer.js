@@ -99,18 +99,29 @@ function movePlayer(steps) {
 
 // 🎯 WebSocket で `playerMoved` を受け取ったら `session.php` を取得
 socket.on("playerMoved", (data) => {
+    console.log("🔍 `players` のデータ型:", typeof players);
+    console.log("🔍 `players` の内容:", JSON.stringify(players, null, 2));
     console.log("📡 WebSocket 受信: playerMoved", data);
-
-    if (!players[data.id]) {
-        console.warn(`⚠️ 受信したプレイヤー ${data.id} が players に存在しない`);
+    console.log("👀 `players` の変更前:", JSON.stringify(players, null, 2));
+    // IDが正しくあるかチェック
+    if (!data.id) {
+        console.error("❌ playerMoved のデータに ID がありません:", data);
+        return;
     }
 
-    players[data.id] = {
-        ...players[data.id],
-        x: data.x,
-        y: data.y,
-        mapID: data.mapID
-    };
-    console.log(`📌 更新後のプレイヤーデータ:`, players);
+    // **ログでデータの変化を詳細に確認**
+    console.log(`🔍 players[${data.id}] 変更前:`, JSON.stringify(players[data.id], null, 2));
+
+    const playerData = players.find(p => p.id === data.id);
+    if (!playerData) {
+        console.error(`❌ players の中に ID ${data.id} のデータが見つかりません！`, players);
+    } else {
+        playerData.x = data.x;
+        playerData.y = data.y;
+        playerData.mapID = data.mapID;
+    }
+    
+
+    console.log("✅ 更新後の players:", JSON.stringify(players, null, 2));
     drawBoard();
 });

@@ -144,6 +144,7 @@ socket.on("movePlayer", async (data) => {
                     socketId: null
                 };
             });
+        
 
             console.log(`✅ サーバーの rooms[${data.room}] を最新データに更新:`, rooms[data.room]);
 
