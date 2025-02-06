@@ -254,6 +254,9 @@ socket.on("playerWarped", (data) => {
 socket.on("movePlayer", async (data) => {
     console.log("📡 movePlayer 受信:", data);
     console.log(JSON.stringify(data, null, 2));
+    console.log(`📡 movePlayer 受信 - rooms[${data.room}] の状態:`, JSON.stringify(rooms[data.room], null, 2));
+    console.log(`📡 movePlayer 受信 - rooms[${data.room}][${data.id}] の状態:`, rooms[data.room]?.[data.id]);
+
 
     if (!rooms[data.room] || !rooms[data.room][data.id]) {
         console.warn(`⚠️ rooms にプレイヤー ${data.id} が存在しません。session.php から再取得を試みます`);
