@@ -253,6 +253,7 @@ socket.on("playerWarped", (data) => {
 // 🎯 プレイヤー移動処理
 socket.on("movePlayer", async (data) => {
     console.log("📡 movePlayer 受信:", data);
+    console.log(JSON.stringify(data, null, 2));
 
     if (!rooms[data.room] || !rooms[data.room][data.id]) {
         console.warn(`⚠️ rooms にプレイヤー ${data.id} が存在しません。session.php から再取得を試みます`);
@@ -338,6 +339,7 @@ socket.on("movePlayer", async (data) => {
         }
     }).catch(error => console.error("❌ update_position.php 取得エラー:", error));
 });
+
 // 🎯 カード取得処理
 socket.on("receiveCard", async (data) => {
     if (!data.room || !data.playerID || !data.card) {
