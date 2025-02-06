@@ -74,7 +74,6 @@ socket.on("startGame", async (data) => {
     }
 
     console.log(`🎮 ルーム ${room} でゲーム開始`);
-
     try {
         const response = await axios.get(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${room}&token=SERVER_ADMIN_TOKEN`);
         if (response.data.success) {
@@ -91,7 +90,7 @@ socket.on("startGame", async (data) => {
                 };
             });
 
-            console.log(`✅ ルーム ${room} のプレイヤーリスト:`, rooms[room].players);
+            // console.log(`✅ ルーム ${room} のプレイヤーリスト:`, rooms[room].players);
             io.to(room).emit("startGame", { roomID: room });
             startNewTurn(room);
         }
@@ -103,7 +102,7 @@ socket.on("startGame", async (data) => {
 
 // 🎯 新しいターンの開始
 function startNewTurn(room) {
-    console.log(`🔍 startNewTurn 実行: ルーム = ${room}`);
+    // console.log(`🔍 startNewTurn 実行: ルーム = ${room}`);
 
     // 🎯 ルームの存在チェック
     if (!rooms[room]) {
@@ -116,14 +115,14 @@ function startNewTurn(room) {
         console.error(`❌ ルーム ${room} の players が undefined です`);
     }
 
-    console.log(`✅ ルーム ${room} の現在の状態:`, JSON.stringify(rooms[room], null, 2));
+    // console.log(`✅ ルーム ${room} の現在の状態:`, JSON.stringify(rooms[room], null, 2));
 
     rooms[room].turn++;
     Object.keys(rooms[room].players).forEach(playerID => {
         rooms[room].players[playerID].hasRolledDice = false;
     });
 
-    console.log(`🔄 ルーム ${room} のターン ${rooms[room].turn} 開始 - startTurn を送信`);
+    // console.log(`🔄 ルーム ${room} のターン ${rooms[room].turn} 開始 - startTurn を送信`);
     io.to(room).emit("startTurn", { turn: rooms[room].turn });
 
     rooms[room].timer = setTimeout(() => {
@@ -150,7 +149,7 @@ socket.on("rollDice", (data) => {
     const diceRoll = Math.floor(Math.random() * 6) + 1;
     rooms[room].players[playerID].hasRolledDice = true;
 
-    console.log(`🎲 プレイヤー ${playerID} が ${diceRoll} を出しました`);
+    // console.log(`🎲 プレイヤー ${playerID} が ${diceRoll} を出しました`);
 
     io.to(room).emit("diceRolled", { playerID, roll: diceRoll });
     // すべてのプレイヤーがサイコロを振ったらターン終了
@@ -167,8 +166,7 @@ function endTurn(room) {
         return;
     }
 
-    console.log(`🔍 endTurn 実行: ルーム ${room} の状態:`, JSON.stringify(rooms[room], null, 2));
-
+    // console.log(`🔍 endTurn 実行: ルーム ${room} の状態:`, JSON.stringify(rooms[room], null, 2));
     console.log(`🛑 ルーム ${room} のターン ${rooms[room].turn} 終了`);
     io.to(room).emit("endTurn", { turn: rooms[room].turn });
 
@@ -188,7 +186,7 @@ socket.on("viewMap", async (data) => {
         console.error("❌ 無効な viewMap データ:", data);
         return;
     }
-    console.log(`👀 プレイヤー ${data.playerID} がマップ ${data.mapID} を閲覧`);
+    // console.log(`👀 プレイヤー ${data.playerID} がマップ ${data.mapID} を閲覧`);
     try {
         console.log("📌 送信する token:", data.token);
         const response = await axios.post(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${data.room}`, 
@@ -208,7 +206,6 @@ socket.on("viewMap", async (data) => {
             if (!rooms[data.room].players[player.id]) {
                 rooms[data.room].players[player.id] = {}; // 🎯 既存データがある場合は保持
             }
-        
             rooms[data.room].players[player.id].id = player.id;
             rooms[data.room].players[player.id].username = player.username;
             rooms[data.room].players[player.id].x = player.x;
@@ -217,10 +214,8 @@ socket.on("viewMap", async (data) => {
             rooms[data.room].players[player.id].socketId = rooms[data.room].players[player.id].socketId || null; // 既存の socketId を保持
         });
         
-        console.log(`✅ サーバーの rooms[${data.room}] を最新データに統合:`, rooms[data.room]);
-        
-
-        console.log(`✅ サーバーの rooms[${data.room}] を最新データに更新`, rooms[data.room]);
+        // console.log(`✅ サーバーの rooms[${data.room}] を最新データに統合:`, rooms[data.room]);
+        // console.log(`✅ サーバーの rooms[${data.room}] を最新データに更新`, rooms[data.room]);
 
         // 🎯 指定マップのプレイヤーデータを送信
         const filteredPlayers = Object.values(rooms[data.room]).filter(p => p.mapID === data.mapID);
