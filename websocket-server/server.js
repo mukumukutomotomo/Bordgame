@@ -189,14 +189,29 @@ socket.on("viewMap", async (data) => {
     // console.log(`👀 プレイヤー ${data.playerID} がマップ ${data.mapID} を閲覧`);
     try {
         console.log("📌 送信する token:", data.token);
-        const response = await axios.post(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${data.room}`, 
-            new URLSearchParams({ token: data.token }).toString(), {
-            headers: { "Content-Type": "application/x-www-form-urlencoded" }
-        });
-
-        if (!response.data.success) {
-            console.error("❌ session.php からのデータ取得に失敗:", response.data.error);
-            return;
+        try {
+            const response = await axios.post(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${data.room}`, 
+                new URLSearchParams({ token: data.token }).toString(), {
+                headers: { "Content-Type": "application/x-www-form-urlencoded" }
+            });
+        
+            console.log("📡 session.php のレスポンス取得完了");
+        
+            if (typeof response.data !== "object") {
+                console.error("❌ session.php のレスポンスが JSON ではありません:", response.data);
+                return;
+            }
+        
+            if (response.data.error) {
+                console.error("❌ session.php のエラー:", response.data.error);
+                return;
+            }
+        
+            console.log("📡 session.php のレスポンス:", JSON.stringify(response.data, (key, value) =>
+                (value && value.constructor === Timeout) ? undefined : value, 2)); // `Timeout` を除外
+        
+        } catch (error) {
+            console.error("❌ session.php 取得エラー:", error.message);
         }
         if (!rooms[data.room]) {
             rooms[data.room] = { players: {} }; // ルームが未定義なら新しく作成
