@@ -66,8 +66,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // **ワープ処理**
     function warpToMap(targetMap) {
-        console.log(`🚀 ワープ実行: ${targetMap}`);
-
         // **データベースを更新**
         fetch("https://tohru-portfolio.secret.jp/bordgame/game/gamesystem_php/update_player_map.php", {
             method: "POST",
@@ -84,7 +82,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 console.error("warp_playerから❌ データベース更新失敗:", data.error);
                 return;
             }
-            console.log("✅ データベース更新成功:", data);
 
             // **WebSocketで他プレイヤーに通知**
             socket.emit("playerWarped", {

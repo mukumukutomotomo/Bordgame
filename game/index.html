@@ -9,6 +9,9 @@
 </head>
 <body>
     <p id="gameStatus">ゲームが開始されていません</p>
+    <div id="turnTimerContainer" style="position: relative; width: 100%; height: 10px; background: #ccc;">
+        <div id="turnTimerBar" style="width: 100%; height: 100%; background: red;"></div>
+    </div>
     <!-- メインマップ表示エリア -->
     <div id="map-wrapper">
         <div id="map-container">
@@ -41,14 +44,15 @@
 
     
     <div id="controls">
-        <button id="moveForward">⬆️ 2マス進む</button>
-        <button id="rollDice">🎲 サイコロを振る</button>
-        <button id="moveBackward">⬇️ 2マス戻る</button> 
-        <button id="normalButton">通常サイズ</button>
+        <button id="moveForward">⬆️ </button>
+        <button id="rollDice">🎲 </button>
+        <button id="moveBackward">⬇️ </button> 
+        <!-- <button id="normalButton">通常サイズ</button>
         <button id="giantButton">拡大</button>
-        <button id="shrunkenButton">縮小</button>
-        <button id="shrunkenButton">インベントリ</button>
-        <button id="winButton">🏆 勝利</button> 
+        <button id="shrunkenButton">縮小</button> -->
+        <button id="shrunkenButton">👜</button>
+        <button id="useCard">🃏</button>
+        <button id="winButton">🏆 </button> 
     </div>
     <div id="hp-container"></div>
     <p>現在のマップ: <span id="currentMapDisplay">map-01</span></p>

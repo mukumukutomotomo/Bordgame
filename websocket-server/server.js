@@ -90,7 +90,7 @@ socket.on("startGame", async (data) => {
                 players: Object.values(rooms[data.room])
             });
 
-            io.to(data.room).emit("startGame");
+            io.to(data.room).emit("startGame", { roomID: data.room }); // ✅ ここを追加
             startNewTurn(data.room);
         } else {
             console.error(`❌ ルーム ${data.room} のプレイヤーデータ取得失敗:`, response.data.error);
