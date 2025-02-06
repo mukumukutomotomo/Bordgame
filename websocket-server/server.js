@@ -258,20 +258,29 @@ socket.on("movePlayer", async (data) => {
                 return;
             }
 
-            // ✅ `rooms` を更新
-            rooms[data.room] = {};
+            if (!rooms[data.room]) {
+                rooms[data.room] = { players: {} }; // 新しくルームを作成する場合
+            }
+            
+            if (!rooms[data.room].players) {
+                rooms[data.room].players = {}; // もし `players` が消えていたら空のオブジェクトにする
+            }
+            
             response.data.players.forEach(player => {
-                rooms[data.room][player.id] = {
-                    id: player.id,
-                    username: player.username,
-                    x: player.x,
-                    y: player.y,
-                    mapID: player.mapID,
-                    socketId: null
-                };
+                if (!rooms[data.room].players[player.id]) {
+                    rooms[data.room].players[player.id] = {}; // 既存データを保持する
+                }
+            
+                rooms[data.room].players[player.id].id = player.id;
+                rooms[data.room].players[player.id].username = player.username;
+                rooms[data.room].players[player.id].x = player.x;
+                rooms[data.room].players[player.id].y = player.y;
+                rooms[data.room].players[player.id].mapID = player.mapID;
+                rooms[data.room].players[player.id].socketId = rooms[data.room].players[player.id].socketId || null; // 既存の socketId を維持
             });
-        
-
+            
+            console.log(`✅ サーバーの rooms[${data.room}] を最新データに統合:`, JSON.stringify(rooms[data.room], null, 2));
+            
             console.log(`✅ サーバーの rooms[${data.room}] を最新データに更新:`, rooms[data.room]);
 
             // 🔹 再取得後に `movePlayer` の処理を続ける
