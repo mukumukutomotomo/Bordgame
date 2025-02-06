@@ -180,16 +180,25 @@ socket.on("viewMap", async (data) => {
             console.error("❌ session.php からのデータ取得に失敗:", response.data.error);
             return;
         }
-        rooms[data.room] = {};
+        if (!rooms[data.room]) {
+            rooms[data.room] = { players: {} }; // ルームが未定義なら新しく作成
+        }
+        
         response.data.players.forEach(player => {
-            rooms[data.room][player.id] = {
-                id: player.id,
-                username: player.username,
-                x: player.x,
-                y: player.y,
-                mapID: player.mapID
-            };
+            if (!rooms[data.room].players[player.id]) {
+                rooms[data.room].players[player.id] = {}; // 🎯 既存データがある場合は保持
+            }
+        
+            rooms[data.room].players[player.id].id = player.id;
+            rooms[data.room].players[player.id].username = player.username;
+            rooms[data.room].players[player.id].x = player.x;
+            rooms[data.room].players[player.id].y = player.y;
+            rooms[data.room].players[player.id].mapID = player.mapID;
+            rooms[data.room].players[player.id].socketId = rooms[data.room].players[player.id].socketId || null; // 既存の socketId を保持
         });
+        
+        console.log(`✅ サーバーの rooms[${data.room}] を最新データに統合:`, rooms[data.room]);
+        
 
         console.log(`✅ サーバーの rooms[${data.room}] を最新データに更新`, rooms[data.room]);
 
