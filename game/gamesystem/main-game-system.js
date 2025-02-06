@@ -14,12 +14,12 @@ socket.on("startGame", (data) => {
 
 // 🎯 ターン開始
 socket.on("startTurn", (data) => {
-    console.log(`🔄 ターン ${data.turn} 開始`);
+    console.log(`🔄 クライアント側でターン開始を受信: ${data.turn}`);
     document.getElementById("gameStatus").textContent = `🎮 ターン ${data.turn} 開始！`;
     currentTurn = data.turn;
-
     showTurnTimerBar();
 });
+
 
 // 🎯 タイムバーを表示して 60 秒で減少
 function showTurnTimerBar() {

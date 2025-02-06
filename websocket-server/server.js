@@ -110,14 +110,14 @@ function startNewTurn(room) {
         rooms[room].players[playerID].hasRolledDice = false;
     });
 
-    console.log(`🔄 ルーム ${room} のターン ${rooms[room].turn} 開始`);
+    console.log(`🔄 ルーム ${room} のターン ${rooms[room].turn} 開始 - startTurn を送信`);
     io.to(room).emit("startTurn", { turn: rooms[room].turn });
 
-    // ⏳ 60秒のタイマーを設定
     rooms[room].timer = setTimeout(() => {
         endTurn(room);
     }, TURN_DURATION);
 }
+
 
 // 🎲 サイコロを振る処理
 socket.on("rollDice", (data) => {
@@ -153,11 +153,13 @@ function endTurn(room) {
     console.log(`🛑 ルーム ${room} のターン ${rooms[room].turn} 終了`);
     io.to(room).emit("endTurn", { turn: rooms[room].turn });
 
+    // 🎯 5秒後に確実に次のターンを開始
     setTimeout(() => {
+        console.log(`🔄 次のターンを開始`);
         startNewTurn(room);
-    }, TURN_DURATION / 12); // 🎯 60秒の1/12で5秒に設定、今後変更しやすく
-    
+    }, 5000); // 🔄 5秒待ってから次のターン開始
 }
+
 
 
 // 🎯マップ切り替え
