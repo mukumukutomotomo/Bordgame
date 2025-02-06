@@ -90,11 +90,15 @@ socket.on("startGame", async (data) => {
                     username: player.username,
                 };
             });
+            console.log(`✅ ルーム ${room} のプレイヤーリスト:`, rooms[room].players);
+            io.to(room).emit("startGame", { roomID: room });
+            startNewTurn(room);
         }
     } catch (error) {
         console.error(`❌ session.php データ取得エラー:`, error.message);
     }
 });
+
 
 // 🎯 新しいターンの開始
 function startNewTurn(room) {
