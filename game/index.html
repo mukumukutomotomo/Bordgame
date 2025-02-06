@@ -9,9 +9,12 @@
 </head>
 <body>
     <p id="gameStatus">ゲームが開始されていません</p>
-    <div id="turnTimerContainer" style="position: relative; width: 100%; height: 10px; background: #ccc;">
+    <div id="turnTimerContainer" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 10px; background: #ccc; z-index: 999;">
         <div id="turnTimerBar" style="width: 100%; height: 100%; background: red;"></div>
+        <div id="turnTimerLabel" style="position: absolute; top: 12px; left: 50%; transform: translateX(-50%); font-size: 14px; color: black;"></div>
     </div>
+    
+    
     <!-- メインマップ表示エリア -->
     <div id="map-wrapper">
         <div id="map-container">
@@ -50,11 +53,19 @@
         <!-- <button id="normalButton">通常サイズ</button>
         <button id="giantButton">拡大</button>
         <button id="shrunkenButton">縮小</button> -->
-        <button id="shrunkenButton">👜</button>
+        <button id="openinventory">👜</button>
         <button id="useCard">🃏</button>
         <button id="winButton">🏆 </button> 
     </div>
     <div id="hp-container"></div>
+    <div id="inventory" style="display: none;">
+        <h3>インベントリ</h3>
+        <ul>
+            <li>アイテム1</li>
+            <li>アイテム2</li>
+            <li>アイテム3</li>
+        </ul>
+    </div>
     <p>現在のマップ: <span id="currentMapDisplay">map-01</span></p>
     <p>表示中のマップ: <span id="viewingMapDisplay">map-01</span></p>
 
@@ -79,6 +90,7 @@
     <script src="/bordgame/game/gamesystem/main-game-system.js"></script>
     <script src="/bordgame/game/gamesystem/main-game-system-health-controll.js"></script>
     <script src="/bordgame/game/gamesystem/main-game-system-player-warp.js"></script>
+    <script src="/bordgame/game/gamesystem/sub-game-system-inventory.js"></script>
     <script src="/bordgame/game/gamesystem/sub-game-system-rank-calculation.js"></script>
     <script src="/bordgame/game/mapcontroll/map-controll.js"></script>
     <script src="/bordgame/game/cardsystem/main-game-system-card-earn-legendary.js"></script>

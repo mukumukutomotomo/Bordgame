@@ -206,19 +206,12 @@ socket.on("endGame", () => {
 });
 
 // 🎯 カードやイベント処理
-const diceButton = document.getElementById("rollDice");
 const moveForwardButton = document.getElementById("moveForward");
 const moveBackwardButton = document.getElementById("moveBackward");
 const trapButton = document.getElementById("trapButton");
 const diceResult = document.getElementById("diceResult");
 const statusText = document.getElementById("status");
 
-// 🎲 サイコロを振る処理
-diceButton.addEventListener("click", () => {
-    const dice = Math.floor(Math.random() * 6) + 1;
-    diceResult.textContent = `出目: ${dice}`;
-    movePlayer(dice);
-});
 
 // 🔹 2マス進む
 moveForwardButton.addEventListener("click", () => {
@@ -229,9 +222,35 @@ moveForwardButton.addEventListener("click", () => {
 moveBackwardButton.addEventListener("click", () => {
     movePlayer(-2);
 });
+let hasRolledDice = false;  // 🎯 1ターンに1回だけ振れるように管理
 
-// // 🔹 罠（1ターン休み）
-// trapButton.addEventListener("click", () => {
-//     statusText.textContent = "状態: 1ターン休み中";
-//     alert("罠にかかった！次のターンは休み");
-// });
+
+// サイコロ関連
+const diceButton = document.getElementById("rollDice");
+diceButton.addEventListener("click", () => {
+    if (hasRolledDice) {
+        alert("このターンではもうサイコロを振れません！");
+        return;
+    }
+    // 🎯 サーバーに「サイコロを振る」リクエストを送る
+    socket.emit("rollDice", { room: roomID, playerID: userID });
+    hasRolledDice = true; // 🎯 クライアント側でもフラグを立てる
+});
+
+// 🎲 サーバーからのサイコロ結果を受信
+socket.on("diceRolled", (data) => {
+    console.log(`🎲 ${data.playerID} が ${data.roll} を出しました`);
+    
+    if (data.playerID === userID) {
+        diceResult.textContent = `出目: ${data.roll}`;
+        movePlayer(data.roll); // 🎯 出た目に基づいて移動
+    }
+});
+socket.on("rollDenied", (data) => {
+    alert(data.reason);
+});
+
+// 🎯 ターン終了時にフラグをリセット
+socket.on("endTurn", () => {
+    hasRolledDice = false;
+});

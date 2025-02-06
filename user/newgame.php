@@ -169,6 +169,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             Card_ID_148 INT DEFAULT 0 CHECK (Card_ID_148 >= 0),
             Card_ID_149 INT DEFAULT 0 CHECK (Card_ID_149 >= 0),
             Card_ID_150 INT DEFAULT 0 CHECK (Card_ID_150 >= 0)
+            Card_ID_0000 INT DEFAULT 0 CHECK (Card_ID_150 >= 0)
 
         )";        
         $pdo->exec($sql);

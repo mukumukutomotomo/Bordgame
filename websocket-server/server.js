@@ -99,40 +99,44 @@ socket.on("startGame", async (data) => {
         console.error(`❌ session.php データ取得エラー:`, error.message);
     }
 });
-function startNewTurn(room) {
-    if (!rooms[room]) return;
+// 🎲 サイコロを振る処理
+socket.on("rollDice", (data) => {
+    const { room, playerID } = data;
     
-    rooms[room].turn++;
-    Object.keys(rooms[room].players).forEach(playerID => {
-        rooms[room].players[playerID].hasRolledDice = false;
-        rooms[room].players[playerID].hasUsedCard = false;
-    });
-    
-    io.to(room).emit("startTurn", { turn: rooms[room].turn, players: rooms[room].players });
-    
-    setTimeout(() => endTurn(room), TURN_DURATION);
-}
+    if (!rooms[room] || !rooms[room][playerID]) {
+        console.error(`❌ ルーム ${room} にプレイヤー ${playerID} が見つかりません`);
+        return;
+    }
 
+    // すでにサイコロを振った場合は拒否
+    if (rooms[room][playerID].hasRolledDice) {
+        socket.emit("rollDenied", { reason: "このターンではもうサイコロを振れません" });
+        return;
+    }
+
+    // 🎲 サイコロの目をランダムに決定
+    const diceRoll = Math.floor(Math.random() * 6) + 1;
+    rooms[room][playerID].hasRolledDice = true; // 🎯 フラグを立てる
+
+    console.log(`🎲 プレイヤー ${playerID} が ${diceRoll} を出しました`);
+
+    // 全プレイヤーにサイコロの結果を送信
+    io.to(room).emit("diceRolled", { playerID, roll: diceRoll });
+});
+
+// 🎯 ターン終了時にフラグをリセット
 function endTurn(room) {
     if (!rooms[room]) return;
+    
+    Object.keys(rooms[room]).forEach(playerID => {
+        rooms[room][playerID].hasRolledDice = false; // 🎯 フラグリセット
+    });
+
     io.to(room).emit("endTurn", { turn: rooms[room].turn });
-    startNewTurn(room);
+
+    setTimeout(() => startNewTurn(room), 5000); // 5秒後に次のターン開始
 }
 
-socket.on("turnAction", (data) => {
-    const { room, playerID, action } = data;
-    if (!rooms[room] || !rooms[room].players[playerID]) return;
-
-    if (action === "rollDice") {
-        rooms[room].players[playerID].hasRolledDice = true;
-    } else if (action === "useCard") {
-        rooms[room].players[playerID].hasUsedCard = true;
-    }
-
-    if (Object.values(rooms[room].players).every(p => p.hasRolledDice)) {
-        endTurn(room);
-    }
-});
 
 // 🎯マップ切り替え
 socket.on("viewMap", async (data) => {

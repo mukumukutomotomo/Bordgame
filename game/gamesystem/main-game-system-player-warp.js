@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("🚀 ワープシステム起動");
+    // console.log("🚀 ワープシステム起動");
 
     // 各マップのワープゾーン設定 (座標ごとに移動可能なマップを設定)
     const warpZones = {
@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         warpZones[mapID].forEach(zone => {
             if (player.x === zone.x && player.y === zone.y) {
-                console.log(`🌟 ワープゾーン到達: (${zone.x}, ${zone.y})`);
+                // console.log(`🌟 ワープゾーン到達: (${zone.x}, ${zone.y})`);
                 showWarpOptions(zone.destinations);
             }
         });
@@ -66,6 +66,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // **ワープ処理**
     function warpToMap(targetMap) {
+        // console.log(`🚀 ワープ実行: ${targetMap}`);
+
         // **データベースを更新**
         fetch("https://tohru-portfolio.secret.jp/bordgame/game/gamesystem_php/update_player_map.php", {
             method: "POST",
@@ -82,6 +84,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 console.error("warp_playerから❌ データベース更新失敗:", data.error);
                 return;
             }
+            // console.log("✅ データベース更新成功:", data);
 
             // **WebSocketで他プレイヤーに通知**
             socket.emit("playerWarped", {
@@ -99,35 +102,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // **他プレイヤーのワープを適用**
     socket.on("playerWarped", function (data) {
-        console.log(`🔄 他プレイヤー (${data.playerID}) がワープ: ${data.newMapID}`);
+        // console.log(`🔄 他プレイヤー (${data.playerID}) がワープ: ${data.newMapID}`);
 
         // **自分がワープした場合のみ盤面を変更**
         if (data.playerID === userID) {
-            console.log("✅ 自分のワープなので盤面を変更");
+            // console.log("✅ 自分のワープなので盤面を変更");
             changeMap(data.newMapID);
         } else {
-            console.log("🚫 他プレイヤーのワープなので盤面は変更しない");
+            // console.log("🚫 他プレイヤーのワープなので盤面は変更しない");
         }
     });
 
 
     // **プレイヤー移動を監視**
     socket.on("playerMoved", (data) => {
-        console.log(`📡 プレイヤー移動検知: ID=${data.id}, x=${data.x}, y=${data.y}`);
+        // console.log(`📡 プレイヤー移動検知: ID=${data.id}, x=${data.x}, y=${data.y}`);
 
         // 🎯 `window.userID` を確実に数値型に統一
         window.userID = Number(window.userID);
         data.id = Number(data.id);
 
-        console.log("🔍 `data.id` の値:", data.id, " (型: " + typeof data.id + ")");
-        console.log("🔍 `window.userID` の値:", window.userID, " (型: " + typeof window.userID + ")");
+        // console.log("🔍 `data.id` の値:", data.id, " (型: " + typeof data.id + ")");
+        // console.log("🔍 `window.userID` の値:", window.userID, " (型: " + typeof window.userID + ")");
 
         // 🎯 自分の移動だけチェック
         if (data.id === window.userID) {
-            console.log("✅ 自分の移動イベントなので処理を実行");
+            // console.log("✅ 自分の移動イベントなので処理を実行");
             checkPlayerWarp(data);
         } else {
-            console.log("🚫 他プレイヤーの移動イベントなので処理しない");
+            // console.log("🚫 他プレイヤーの移動イベントなので処理しない");
         }
     });
 });
