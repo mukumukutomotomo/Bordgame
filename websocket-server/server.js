@@ -90,6 +90,7 @@ socket.on("startGame", async (data) => {
                     username: player.username,
                 };
             });
+
             console.log(`✅ ルーム ${room} のプレイヤーリスト:`, rooms[room].players);
             io.to(room).emit("startGame", { roomID: room });
             startNewTurn(room);
@@ -332,14 +333,26 @@ socket.on("disconnect", () => {
     console.log(`❌ プレイヤーが切断: ${socket.id}`);
 
     Object.keys(rooms).forEach((roomID) => {
-        if (rooms[roomID]) {
-            const playerID = Object.keys(rooms[roomID].players).find(id => rooms[roomID].players[id].socketId === socket.id);
-            if (playerID) {
-                console.log(`🗑️ ルーム ${roomID} からプレイヤー ${playerID} を削除`);
-                delete rooms[roomID].players[playerID];
+        // 🎯 `rooms[roomID]` の存在チェック
+        if (!rooms[roomID] || !rooms[roomID].players) {
+            console.warn(`⚠️ ルーム ${roomID} が存在しない、または players が未定義`);
+            return;
+        }
+
+        const playerID = Object.keys(rooms[roomID].players).find(id => rooms[roomID].players[id].socketId === socket.id);
+        
+        if (playerID) {
+            console.log(`🗑️ ルーム ${roomID} からプレイヤー ${playerID} を削除`);
+            delete rooms[roomID].players[playerID];
+
+            // 🎯 ルームが空になったら削除
+            if (Object.keys(rooms[roomID].players).length === 0) {
+                console.log(`🗑️ ルーム ${roomID} を削除`);
+                delete rooms[roomID];
             }
         }
     });
+
     io.emit("updatePlayers", rooms);
 });
 });

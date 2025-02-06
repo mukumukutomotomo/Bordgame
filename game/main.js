@@ -10,9 +10,12 @@ function getParamFromURL(param) {
 const roomID = getParamFromURL("room");  // `roomID` を取得
 const token = getParamFromURL("token");  // `token` を取得
 const userID = getParamFromURL("user_id");  // `token` を取得
+const username = getParamFromURL("username");
 window.roomID = roomID; 
 window.playerToken = token;
 window.userID = userID;
+window.username = username
+
 
 if (token) {
     console.log("✅ URL から取得した token:", token);
@@ -30,16 +33,19 @@ socket.on("connect", () => {
     console.log("📡 joinRoom 送信データ:", {
         room: roomID,
         playerID: userID,
-        mapID: "map-01"
+        username: username, // 🎯 ここが適切な値か確認！
+        mapID: currentMapID
     });
+    
 
     if (roomID) {
         console.log(`🔗 WebSocket 経由でルーム ${roomID} に参加`);
         socket.emit("joinRoom", {
             room: roomID,
             playerID: userID,
-            mapID: "map-01"
-        });        
+            username: username, // 🎯 ここが適切な値か確認！
+            mapID: currentMapID
+        });             
     }
 });
 
@@ -118,6 +124,8 @@ function drawBoard() {
                     playerElement.textContent = player.username;
 
                     if (player.id === userID) {
+                        console.log(player.id);
+                        console.log(userID);
                         playerElement.style.backgroundColor = "blue";
                     } else {
                         playerElement.style.backgroundColor = "red";
