@@ -64,77 +64,94 @@ socket.on("joinRoom", (data) => {
         players: Object.values(rooms[data.room])
     });
 });
-// ゲームスタート
+const TURN_DURATION = 60000; // 60秒
+// 🎮 ゲームスタート時に最初のターンを開始
 socket.on("startGame", async (data) => {
-    if (!data.room) {
+    const { room } = data;
+    if (!room) {
         console.error("❌ ルームIDが指定されていません");
         return;
     }
 
-    console.log(`🎮 ルーム ${data.room} でゲーム開始`);
+    console.log(`🎮 ルーム ${room} でゲーム開始`);
 
     try {
-        const response = await axios.get(`${LOLLIPOP_API}?room=${data.room}&token=SERVER_ADMIN_TOKEN`);
-
+        const response = await axios.get(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${room}&token=SERVER_ADMIN_TOKEN`);
         if (response.data.success) {
-            rooms[data.room] = response.data.players.reduce((acc, player) => {
-                acc[player.id] = { ...player, socketId: null, hasRolledDice: false, hasUsedCard: false };
-                return acc;
-            }, {});
-
-            console.log(`✅ ルーム ${data.room} の最新プレイヤーリスト更新`);
-            
-            // 🔹 updatePlayers のデータ形式を統一
-            io.to(data.room).emit("updatePlayers", {
-                roomID: data.room,
-                players: Object.values(rooms[data.room])
+            rooms[room] = { // 🎯 session.php のデータ取得成功後にルームを初期化
+                players: {},
+                turn: 0,
+                active: true,
+                timer: null,
+            };
+            response.data.players.forEach(player => {
+                rooms[room].players[player.id] = {
+                    hasRolledDice: false,
+                    username: player.username,
+                };
             });
-
-            io.to(data.room).emit("startGame", { roomID: data.room }); // ✅ ここを追加
-            startNewTurn(data.room);
-        } else {
-            console.error(`❌ ルーム ${data.room} のプレイヤーデータ取得失敗:`, response.data.error);
         }
     } catch (error) {
         console.error(`❌ session.php データ取得エラー:`, error.message);
     }
 });
+
+// 🎯 新しいターンの開始
+function startNewTurn(room) {
+    if (!rooms[room] || !rooms[room].active) return;
+
+    rooms[room].turn++;
+    Object.keys(rooms[room].players).forEach(playerID => {
+        rooms[room].players[playerID].hasRolledDice = false;
+    });
+
+    console.log(`🔄 ルーム ${room} のターン ${rooms[room].turn} 開始`);
+    io.to(room).emit("startTurn", { turn: rooms[room].turn });
+
+    // ⏳ 60秒のタイマーを設定
+    rooms[room].timer = setTimeout(() => {
+        endTurn(room);
+    }, TURN_DURATION);
+}
+
 // 🎲 サイコロを振る処理
 socket.on("rollDice", (data) => {
     const { room, playerID } = data;
     
-    if (!rooms[room] || !rooms[room][playerID]) {
+    if (!rooms[room] || !rooms[room].players[playerID]) {
         console.error(`❌ ルーム ${room} にプレイヤー ${playerID} が見つかりません`);
         return;
     }
 
-    // すでにサイコロを振った場合は拒否
-    if (rooms[room][playerID].hasRolledDice) {
+    if (rooms[room].players[playerID].hasRolledDice) {
         socket.emit("rollDenied", { reason: "このターンではもうサイコロを振れません" });
         return;
     }
 
-    // 🎲 サイコロの目をランダムに決定
     const diceRoll = Math.floor(Math.random() * 6) + 1;
-    rooms[room][playerID].hasRolledDice = true; // 🎯 フラグを立てる
+    rooms[room].players[playerID].hasRolledDice = true;
 
     console.log(`🎲 プレイヤー ${playerID} が ${diceRoll} を出しました`);
 
-    // 全プレイヤーにサイコロの結果を送信
     io.to(room).emit("diceRolled", { playerID, roll: diceRoll });
+    // すべてのプレイヤーがサイコロを振ったらターン終了
+    if (Object.values(rooms[room].players).every(p => p.hasRolledDice)) {
+        clearTimeout(rooms[room].timer);
+        endTurn(room);
+    }
 });
 
-// 🎯 ターン終了時にフラグをリセット
+// 🎯 ターン終了処理
 function endTurn(room) {
     if (!rooms[room]) return;
-    
-    Object.keys(rooms[room]).forEach(playerID => {
-        rooms[room][playerID].hasRolledDice = false; // 🎯 フラグリセット
-    });
 
+    console.log(`🛑 ルーム ${room} のターン ${rooms[room].turn} 終了`);
     io.to(room).emit("endTurn", { turn: rooms[room].turn });
 
-    setTimeout(() => startNewTurn(room), 5000); // 5秒後に次のターン開始
+    setTimeout(() => {
+        startNewTurn(room);
+    }, TURN_DURATION / 12); // 🎯 60秒の1/12で5秒に設定、今後変更しやすく
+    
 }
 
 
@@ -311,12 +328,14 @@ socket.on("disconnect", () => {
     console.log(`❌ プレイヤーが切断: ${socket.id}`);
 
     Object.keys(rooms).forEach((roomID) => {
-        if (rooms[roomID] && rooms[roomID][socket.id]) {
-            console.log(`🗑️ ルーム ${roomID} からプレイヤー ${socket.id} を削除`);
-            delete rooms[roomID][socket.id];
+        if (rooms[roomID]) {
+            const playerID = Object.keys(rooms[roomID].players).find(id => rooms[roomID].players[id].socketId === socket.id);
+            if (playerID) {
+                console.log(`🗑️ ルーム ${roomID} からプレイヤー ${playerID} を削除`);
+                delete rooms[roomID].players[playerID];
+            }
         }
     });
-
     io.emit("updatePlayers", rooms);
 });
 });

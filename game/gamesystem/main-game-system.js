@@ -1,6 +1,6 @@
 let currentTurn = 0;
-let turnTime = 60; // 1ターン60秒
 let activeRoom = null;
+let turnTimerInterval = null; // 🎯 インターバル管理用変数
 
 // 🎮 ゲーム開始
 socket.on("startGame", (data) => {
@@ -10,42 +10,60 @@ socket.on("startGame", (data) => {
     }
     console.log(`🎯 ゲーム開始 - ルーム: ${data.roomID}`);
     activeRoom = data.roomID;
-    
-    setTimeout(() => {
-        showTurnTimerBar(data.roomID);
-    }, 1000);
+});
+
+// 🎯 ターン開始
+socket.on("startTurn", (data) => {
+    console.log(`🔄 ターン ${data.turn} 開始`);
+    document.getElementById("gameStatus").textContent = `🎮 ターン ${data.turn} 開始！`;
+    currentTurn = data.turn;
+
+    showTurnTimerBar();
 });
 
 // 🎯 タイムバーを表示して 60 秒で減少
-function showTurnTimerBar(roomID) {
-    if (roomID !== activeRoom) return;
-    
+function showTurnTimerBar() {
     const timerContainer = document.getElementById("turnTimerContainer");
     const timerBar = document.getElementById("turnTimerBar");
     const timerLabel = document.getElementById("turnTimerLabel");
 
     if (timerContainer && timerBar && timerLabel) {
-        timerContainer.style.display = "block";  // タイムバーを表示
-        timerBar.style.width = "100%";  // 初期状態を100%に
+        timerContainer.style.display = "block";
+        timerBar.style.width = "100%";
         timerLabel.textContent = `残り時間: 60s`;
 
-        // **CSSの `transition` を適用してバーを縮小**
         setTimeout(() => {
-            timerBar.style.transition = "width 60s linear";  // 60秒かけて縮小
+            timerBar.style.transition = "width 60s linear";
             timerBar.style.width = "0%";
-        }, 50); // **少し遅延を加えないと初回のwidth変更が効かないことがある**
+        }, 50);
 
         let remainingTime = 60;
-        const interval = setInterval(() => {
+
+        // 🎯 すでに動作しているタイマーがあればリセット
+        if (turnTimerInterval) clearInterval(turnTimerInterval);
+
+        turnTimerInterval = setInterval(() => {
             remainingTime--;
             timerLabel.textContent = `残り時間: ${remainingTime}s`;
 
             if (remainingTime <= 0) {
-                clearInterval(interval);
-                timerLabel.textContent = "ターン終了！";
+                clearInterval(turnTimerInterval);
+                timerLabel.textContent = "🛑 ターン終了！";
             }
         }, 1000);
     } else {
         console.error("❌ タイムバー要素が見つかりません");
     }
 }
+
+// 🎯 ターン終了処理
+socket.on("endTurn", (data) => {
+    console.log(`🛑 ターン ${data.turn} 終了`);
+    document.getElementById("gameStatus").textContent = "🛑 ターン終了！";
+
+    // 🎯 タイムバーを非表示 & インターバル停止
+    const timerContainer = document.getElementById("turnTimerContainer");
+    if (timerContainer) timerContainer.style.display = "none";
+
+    if (turnTimerInterval) clearInterval(turnTimerInterval);
+});
