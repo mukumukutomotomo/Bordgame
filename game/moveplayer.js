@@ -112,7 +112,8 @@ socket.on("playerMoved", (data) => {
     // **ログでデータの変化を詳細に確認**
     console.log(`🔍 players[${data.id}] 変更前:`, JSON.stringify(players[data.id], null, 2));
 
-    const playerData = players.find(p => p.id === data.id);
+    const playersArray = Object.values(players);
+    const playerData = playersArray.find(p => p.id === data.id);
     if (!playerData) {
         console.error(`❌ players の中に ID ${data.id} のデータが見つかりません！`, players);
     } else {
