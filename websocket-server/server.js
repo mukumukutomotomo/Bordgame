@@ -103,7 +103,20 @@ socket.on("startGame", async (data) => {
 
 // 🎯 新しいターンの開始
 function startNewTurn(room) {
-    if (!rooms[room] || !rooms[room].active) return;
+    console.log(`🔍 startNewTurn 実行: ルーム = ${room}`);
+
+    // 🎯 ルームの存在チェック
+    if (!rooms[room]) {
+        console.error(`❌ ルーム ${room} が見つかりません！`);
+        return;
+    }
+
+    // 🎯 `players` が undefined ならログを出力（復旧処理はしない）
+    if (!rooms[room].players) {
+        console.error(`❌ ルーム ${room} の players が undefined です`);
+    }
+
+    console.log(`✅ ルーム ${room} の現在の状態:`, JSON.stringify(rooms[room], null, 2));
 
     rooms[room].turn++;
     Object.keys(rooms[room].players).forEach(playerID => {
@@ -117,6 +130,7 @@ function startNewTurn(room) {
         endTurn(room);
     }, TURN_DURATION);
 }
+
 
 
 // 🎲 サイコロを振る処理
@@ -148,7 +162,12 @@ socket.on("rollDice", (data) => {
 
 // 🎯 ターン終了処理
 function endTurn(room) {
-    if (!rooms[room]) return;
+    if (!rooms[room]) {
+        console.error(`❌ endTurn 実行時にルーム ${room} が見つかりません`);
+        return;
+    }
+
+    console.log(`🔍 endTurn 実行: ルーム ${room} の状態:`, JSON.stringify(rooms[room], null, 2));
 
     console.log(`🛑 ルーム ${room} のターン ${rooms[room].turn} 終了`);
     io.to(room).emit("endTurn", { turn: rooms[room].turn });
@@ -159,6 +178,7 @@ function endTurn(room) {
         startNewTurn(room);
     }, 5000); // 🔄 5秒待ってから次のターン開始
 }
+
 
 
 

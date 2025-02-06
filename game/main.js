@@ -187,16 +187,6 @@ socket.on("updatePlayers", (data) => {
 });
 
 
-
-
-// 🎯 ゲーム開始イベント
-socket.on("startGame", () => {
-    console.log("🎮 ゲームが開始されました！");
-    document.getElementById("gameStatus").textContent = "🎮 ゲームが開始されました！";
-    board.style.display = "grid";
-    drawBoard(); 
-});
-
 function changeMap(mapId) {
     const maps = document.querySelectorAll(".map");
     maps.forEach((map) => {
