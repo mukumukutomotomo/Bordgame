@@ -6,10 +6,11 @@ require_once __DIR__ . "/db.php";  // `db.php` を読み込む
 $token = $_GET['token'] ?? '';
 $x = $_GET['x'] ?? '';
 $y = $_GET['y'] ?? '';
+$mapID = $_GET['mapID'] ?? 'map-01';  // ✅ `mapID` を受け取る
 $room = $_GET['room'] ?? '';
 
 try {
-    if (!$token || $x === '' || $y === '' || !$room) {
+    if (!$token || $x === '' || $y === '' || !$room || !$mapID) {
         throw new Exception("必要なデータが不足しています");
     }
 
@@ -25,17 +26,19 @@ try {
         throw new Exception("指定されたルームのテーブルが存在しません: " . $room_table);
     }
 
-    // **プレイヤーの座標を更新**
-    $sql = "UPDATE $room_table SET x = :x, y = :y WHERE token = :token";
+    // **プレイヤーの座標 & マップを更新**
+    $sql = "UPDATE $room_table SET x = :x, y = :y, mapID = :mapID WHERE token = :token";
     $stmt = $pdo->prepare($sql);
     $stmt->bindParam(':x', $x, PDO::PARAM_INT);
     $stmt->bindParam(':y', $y, PDO::PARAM_INT);
+    $stmt->bindParam(':mapID', $mapID, PDO::PARAM_STR);  // ✅ `mapID` を更新
     $stmt->bindParam(':token', $token, PDO::PARAM_STR);
+    
     if (!$stmt->execute()) {
         throw new Exception("データ更新に失敗しました");
     }
 
-    echo json_encode(["success" => true, "message" => "プレイヤー座標を更新しました"], JSON_UNESCAPED_UNICODE);
+    echo json_encode(["success" => true, "message" => "プレイヤーの位置とマップを更新しました"], JSON_UNESCAPED_UNICODE);
     exit;
 
 } catch (Exception $e) {

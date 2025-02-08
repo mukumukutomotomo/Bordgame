@@ -1,4 +1,8 @@
-const socket = io("https://bordgame.onrender.com");
+const socket = io("https://bordgame.onrender.com", {
+    transports: ["websocket"], 
+    withCredentials: true 
+});
+
 function getParamFromURL(param) {
     const params = new URLSearchParams(window.location.search);
     return params.get(param);
@@ -6,9 +10,12 @@ function getParamFromURL(param) {
 const roomID = getParamFromURL("room");  // `roomID` を取得
 const token = getParamFromURL("token");  // `token` を取得
 const userID = getParamFromURL("user_id");  // `token` を取得
+const username = getParamFromURL("username");
 window.roomID = roomID; 
 window.playerToken = token;
 window.userID = userID;
+window.username = username
+
 
 if (token) {
     console.log("✅ URL から取得した token:", token);
@@ -23,11 +30,25 @@ if (roomID) {
 }
 socket.on("connect", () => {
     console.log("✅ WebSocket 接続成功");
+    console.log("📡 joinRoom 送信データ:", {
+        room: roomID,
+        playerID: userID,
+        username: username, // 🎯 ここが適切な値か確認！
+        mapID: currentMapID
+    });
+    
+
     if (roomID) {
         console.log(`🔗 WebSocket 経由でルーム ${roomID} に参加`);
-        socket.emit("joinRoom", roomID);
+        socket.emit("joinRoom", {
+            room: roomID,
+            playerID: userID,
+            username: username, // 🎯 ここが適切な値か確認！
+            mapID: currentMapID
+        });             
     }
 });
+
 
 
 // 🎯 プレイヤー情報
@@ -49,7 +70,6 @@ fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID
 .then(response => response.json())
 .then(data => {
     console.log("📌 session.php のレスポンス:", data);
-
     if (data.success) {
         players = {};
         playerSizes = {}; 
@@ -88,45 +108,38 @@ fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID
 });
 
 function drawBoard() {
+    const board = document.getElementById("board");
     board.innerHTML = "";
 
     for (let y = 0; y < 10; y++) {
-        for (let x = 0; x < 10; x++) {
+        for (let x = 0; x < 15; x++) {
             const cell = document.createElement("div");
             cell.classList.add("cell");
 
-            let playerInCell = false;
-            Object.values(players).forEach(player => {                
-                if (player.x == x && player.y == y) {
-                    playerInCell = true;
-
+            Object.values(players).forEach(player => {
+                // ✅ 自分が見ているマップと同じマップにいるプレイヤーのみ表示
+                if (player.mapID === viewingMapID && player.x === x && player.y === y) {
                     const playerElement = document.createElement("div");
                     playerElement.classList.add("player");
+                    playerElement.textContent = player.username;
 
-                    let size = playerSizes[player.id] || "normal";
-                    playerElement.textContent = "■";
-
-                    if (size === "small") {
-                        playerElement.style.transform = "scale(0.5)";
-                    } else if (size === "big") {
-                        playerElement.style.transform = "scale(1.5)";
+                    if (player.id === userID) {
+                        console.log(player.id);
+                        console.log(userID);
+                        playerElement.style.backgroundColor = "blue";
                     } else {
-                        playerElement.style.transform = "scale(1)";
+                        playerElement.style.backgroundColor = "red";
                     }
 
-                    playerElement.style.color = (player.token == currentPlayer.token) ? "blue" : "red";
                     cell.appendChild(playerElement);
                 }
             });
-
-            if (!playerInCell) {
-                cell.style.backgroundColor = "#ddd";
-            }
 
             board.appendChild(cell);
         }
     }
 }
+
 function updatePlayerData(callback) {
     fetch(`https://tohru-portfolio.secret.jp/bordgame/game/session.php?room=${roomID}`)
     .then(response => response.json())
@@ -148,38 +161,40 @@ function updatePlayerData(callback) {
 
 
 
-socket.on("playerMoved", (data) => {
-    console.log(`📡 WebSocket 受信: playerMoved -> id=${data.id}, x=${data.x}, y=${data.y}`);
-    updatePlayerData(() => {
-        console.log(`📌 playerMoved: ID=${data.id} の更新後に drawBoard() を実行`);
-        drawBoard();
-    });
-});
-
 socket.on("updatePlayers", (data) => {
     console.log("📡 updatePlayers 受信:", data);
 
-    if (!Array.isArray(data)) {
-        console.error("❌ updatePlayers のデータ形式が不正です:", data);
+    if (!data || !data.roomID || !Array.isArray(data.players)) {
+        console.error("❌ updatePlayers のデータ形式が不正:", data);
         return;
     }
+
+    const roomData = data[`room_${roomID}`]; // 現在のルームのプレイヤーデータ
     players = {};
-    data.forEach(player => {
-        if (player && player.id) {
-            players[player.id] = player;
-        }
+
+    data.players.forEach(player => {
+        players[player.id] = {
+            id: player.id,
+            username: player.username,
+            x: player.x,
+            y: player.y,
+            mapID: player.mapID || "map-01"
+        };
     });
-    console.log("✅ 更新後の players:", players);
+
+    console.log("✅ players 更新完了:", players);
+    drawBoard();
 });
 
 
-// 🎯 ゲーム開始イベント
-socket.on("startGame", () => {
-    console.log("🎮 ゲームが開始されました！");
-    document.getElementById("gameStatus").textContent = "🎮 ゲームが開始されました！";
-    board.style.display = "grid";
-    drawBoard(); 
-});
+function changeMap(mapId) {
+    const maps = document.querySelectorAll(".map");
+    maps.forEach((map) => {
+        map.classList.remove("active");
+    });
+    document.getElementById(mapId).classList.add("active");
+}
+
 
 
 // 🎯 ゲーム終了
@@ -189,19 +204,12 @@ socket.on("endGame", () => {
 });
 
 // 🎯 カードやイベント処理
-const diceButton = document.getElementById("rollDice");
 const moveForwardButton = document.getElementById("moveForward");
 const moveBackwardButton = document.getElementById("moveBackward");
 const trapButton = document.getElementById("trapButton");
 const diceResult = document.getElementById("diceResult");
 const statusText = document.getElementById("status");
 
-// 🎲 サイコロを振る処理
-diceButton.addEventListener("click", () => {
-    const dice = Math.floor(Math.random() * 6) + 1;
-    diceResult.textContent = `出目: ${dice}`;
-    movePlayer(dice);
-});
 
 // 🔹 2マス進む
 moveForwardButton.addEventListener("click", () => {
@@ -212,9 +220,35 @@ moveForwardButton.addEventListener("click", () => {
 moveBackwardButton.addEventListener("click", () => {
     movePlayer(-2);
 });
+let hasRolledDice = false;  // 🎯 1ターンに1回だけ振れるように管理
 
-// // 🔹 罠（1ターン休み）
-// trapButton.addEventListener("click", () => {
-//     statusText.textContent = "状態: 1ターン休み中";
-//     alert("罠にかかった！次のターンは休み");
-// });
+
+// サイコロ関連
+const diceButton = document.getElementById("rollDice");
+diceButton.addEventListener("click", () => {
+    if (hasRolledDice) {
+        alert("このターンではもうサイコロを振れません！");
+        return;
+    }
+    // 🎯 サーバーに「サイコロを振る」リクエストを送る
+    socket.emit("rollDice", { room: roomID, playerID: userID });
+    hasRolledDice = true; // 🎯 クライアント側でもフラグを立てる
+});
+
+// 🎲 サーバーからのサイコロ結果を受信
+socket.on("diceRolled", (data) => {
+    console.log(`🎲 ${data.playerID} が ${data.roll} を出しました`);
+    
+    if (data.playerID === userID) {
+        diceResult.textContent = `出目: ${data.roll}`;
+        movePlayer(data.roll); // 🎯 出た目に基づいて移動
+    }
+});
+socket.on("rollDenied", (data) => {
+    alert(data.reason);
+});
+
+// 🎯 ターン終了時にフラグをリセット
+socket.on("endTurn", () => {
+    hasRolledDice = false;
+});

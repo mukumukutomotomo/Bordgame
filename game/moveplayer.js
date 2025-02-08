@@ -24,9 +24,10 @@ function movePlayer(steps) {
 
         let newX = data.currentPlayer.x;
         let newY = data.currentPlayer.y;
-        let playerID = data.currentPlayer.id || playerToken;
+        let newMapID = data.currentPlayer.mapID || viewingMapID; // ✅ mapID も考慮
+        let playerID = data.currentPlayer.username || playerToken;
 
-        console.log(`📌 最新の座標取得: x=${newX}, y=${newY}, playerID=${playerID}`);
+        console.log(`📌 最新の座標取得: x=${newX}, y=${newY}, mapID=${newMapID}, playerID=${playerID}`);
 
         for (let i = 0; i < Math.abs(steps); i++) {
             if (steps > 0) {
@@ -48,12 +49,13 @@ function movePlayer(steps) {
             }
         }
 
-        console.log(`📌 新しい座標: x=${newX}, y=${newY}`);
+        console.log(`📌 新しい座標: x=${newX}, y=${newY}, mapID=${newMapID}`);
 
         const sendData = new URLSearchParams({
             token: playerToken,
             x: newX,
             y: newY,
+            mapID: newMapID, // ✅ mapID も送信
             room: roomID.replace("room_", "")
         });
 
@@ -69,16 +71,23 @@ function movePlayer(steps) {
                 console.log("✅ データベースにプレイヤー座標を保存:", saveData);
 
                 // 🎯 WebSocket でサーバーにプレイヤーの移動を通知
-                console.log(`📡 WebSocket 送信: movePlayer -> id=${playerID}, x=${newX}, y=${newY}, room=${roomID}`);
-                socket.emit("movePlayer", {
-                    id: playerID,
-                    token: playerToken,  // 🔥 サーバー側でデータベース更新するために `token` を送信
+                console.log("📡 movePlayer 送信データ:", {
+                    id: currentPlayer.id,  
+                    token: playerToken,
                     x: newX,
                     y: newY,
+                    mapID: newMapID,
+                    room: roomID
+                });
+                socket.emit("movePlayer", {
+                    id: currentPlayer.id,
+                    token: playerToken,
+                    x: newX,
+                    y: newY,
+                    mapID: newMapID, // ✅ mapID をサーバーに送信
                     room: roomID
                 });
 
-                // 🎯 `session.php` から最新のプレイヤーデータを取得してから `drawBoard()`
                 updatePlayerData(drawBoard);
             }
         })
@@ -87,8 +96,33 @@ function movePlayer(steps) {
     .catch(error => console.error("❌ session.php 取得エラー:", error));
 }
 
+
 // 🎯 WebSocket で `playerMoved` を受け取ったら `session.php` を取得
 socket.on("playerMoved", (data) => {
-    console.log(`📡 WebSocket 受信: playerMoved -> id=${data.id}, x=${data.x}, y=${data.y}`);
-    updatePlayerData(drawBoard);
+    console.log("🔍 `players` のデータ型:", typeof players);
+    console.log("🔍 `players` の内容:", JSON.stringify(players, null, 2));
+    console.log("📡 WebSocket 受信: playerMoved", data);
+    console.log("👀 `players` の変更前:", JSON.stringify(players, null, 2));
+    // IDが正しくあるかチェック
+    if (!data.id) {
+        console.error("❌ playerMoved のデータに ID がありません:", data);
+        return;
+    }
+
+    // **ログでデータの変化を詳細に確認**
+    console.log(`🔍 players[${data.id}] 変更前:`, JSON.stringify(players[data.id], null, 2));
+
+    const playersArray = Object.values(players);
+    const playerData = playersArray.find(p => p.id === data.id);
+    if (!playerData) {
+        console.error(`❌ players の中に ID ${data.id} のデータが見つかりません！`, players);
+    } else {
+        playerData.x = data.x;
+        playerData.y = data.y;
+        playerData.mapID = data.mapID;
+    }
+    
+
+    console.log("✅ 更新後の players:", JSON.stringify(players, null, 2));
+    drawBoard();
 });

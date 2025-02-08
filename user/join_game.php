@@ -41,7 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         echo json_encode([
             "success" => true,
             "token" => $token,
-            "redirect" => "https://tohru-portfolio.secret.jp/bordgame/game/index.html?room=$roomID&token=$token&user_id=$user_id"
+            "redirect" => "https://tohru-portfolio.secret.jp/bordgame/game/index.html?room=$roomID&token=$token&user_id=$user_id&username=$username"
         ]);
 
     } catch (PDOException $e) {
